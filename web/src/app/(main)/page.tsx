@@ -1,8 +1,8 @@
 import { Container } from "@/components/layouts/container";
 import { About } from "@/components/top/about";
-
 import { Hero } from "@/components/top/hero";
 import { TeamMirai } from "@/components/top/team-mirai";
+import { siteConfig } from "@/config/site.config";
 import { getDifficultyLevel } from "@/features/bill-difficulty/server/loaders/get-difficulty-level";
 import { BillDisclaimer } from "@/features/bills/client/components/bill-detail/bill-disclaimer";
 import { BillsByTagSection } from "@/features/bills/server/components/bills-by-tag-section";
@@ -11,16 +11,68 @@ import { PreviousSessionSection } from "@/features/bills/server/components/previ
 import { loadHomeData } from "@/features/bills/server/loaders/load-home-data";
 import type { BillWithContent } from "@/features/bills/shared/types";
 import { HomeChatClient } from "@/features/chat/client/components/home-chat-client";
-import { siteConfig } from "@/config/site.config";
-import { getCurrentCouncilSession } from "@/features/council-sessions/server/loaders/get-current-council-session";
 import { CurrentCouncilSession } from "@/features/council-sessions/client/components/current-council-session";
+import { getAllPastSessions } from "@/features/council-sessions/server/loaders/get-all-past-sessions";
+import { getCurrentCouncilSession } from "@/features/council-sessions/server/loaders/get-current-council-session";
+import { getPressConferences } from "@/features/press-conferences/server/loaders/get-press-conferences";
+import { loadTopHeroData } from "@/features/top-hero/server/loaders/load-top-hero-data";
+import { ArchiveHomeView } from "@/features/top-sections/server/components/archive-home-view";
+import { loadTopSectionsData } from "@/features/top-sections/server/loaders/load-top-sections-data";
 import { getJapanTime } from "@/lib/utils/date";
 
-export default async function Home() {
+export const dynamic = "force-dynamic";
+
+async function ArchiveHome() {
+  const [heroData, sectionsData, pastSessions, pressConferences, difficulty] =
+    await Promise.all([
+      loadTopHeroData(),
+      loadTopSectionsData(),
+      getAllPastSessions(),
+      siteConfig.features.pressConferences
+        ? getPressConferences()
+        : Promise.resolve([]),
+      siteConfig.features.aiChat
+        ? getDifficultyLevel()
+        : Promise.resolve("normal" as const),
+    ]);
+
+  return (
+    <>
+      <ArchiveHomeView
+        currentSession={heroData.currentSession}
+        nextSession={heroData.nextSession}
+        latestConference={heroData.latestConference}
+        recentConferences={heroData.recentConferences}
+        inSessionCounts={heroData.inSessionCounts}
+        today={heroData.today}
+        sessionSlots={sectionsData.sessionSlots}
+        committeeMeetings={sectionsData.committeeMeetings}
+        questions={sectionsData.questions}
+        questionSessionName={sectionsData.questionSessionName}
+        billSummary={sectionsData.billSummary}
+        billsSessionSlug={sectionsData.billsSessionSlug}
+        isBillSessionInSession={sectionsData.isBillSessionInSession}
+        pastSessions={pastSessions}
+        pressConferences={pressConferences}
+      />
+
+      <Container>
+        <About />
+        <TeamMirai />
+        <BillDisclaimer />
+      </Container>
+
+      {siteConfig.features.aiChat && (
+        <HomeChatClient currentDifficulty={difficulty} bills={[]} />
+      )}
+    </>
+  );
+}
+
+async function BillsHome() {
   const { billsByTag, featuredBills, previousSessionData, activeSessionSlug } =
     await loadHomeData();
 
-  // ゆくゆくタグ機能がマージされたらBFFに統合する
   const [currentSession, currentDifficulty] = await Promise.all([
     getCurrentCouncilSession(getJapanTime()),
     getDifficultyLevel(),
@@ -41,17 +93,13 @@ export default async function Home() {
     <>
       <Hero />
 
-      {/* 本日の定例会セクション */}
       <CurrentCouncilSession session={currentSession} />
 
-      {/* 議案一覧セクション */}
       <Container className="">
         <div className="py-10">
           <main className="flex flex-col gap-16">
-            {/* 注目の議案セクション */}
             <FeaturedBillSection bills={featuredBills} />
 
-            {/* タグ別議案一覧セクション */}
             <BillsByTagSection
               billsByTag={billsByTag}
               featuredBillIds={featuredBillIds}
@@ -60,7 +108,7 @@ export default async function Home() {
           </main>
         </div>
       </Container>
-      {/* 前回の定例会セクション（Archive） */}
+
       {previousSessionData && (
         <div className="bg-mirai-surface-muted py-10">
           <Container>
@@ -74,17 +122,11 @@ export default async function Home() {
       )}
 
       <Container>
-        {/* このサービスについて セクション */}
         <About />
-
-        {/* チームみらいについて セクション */}
         <TeamMirai />
-
-        {/* 免責事項 */}
         <BillDisclaimer />
       </Container>
 
-      {/* チャット機能 */}
       {siteConfig.features.aiChat && (
         <HomeChatClient
           currentDifficulty={currentDifficulty}
@@ -96,4 +138,11 @@ export default async function Home() {
       )}
     </>
   );
+}
+
+export default async function Home() {
+  if (siteConfig.homeLayout === "archive") {
+    return <ArchiveHome />;
+  }
+  return <BillsHome />;
 }

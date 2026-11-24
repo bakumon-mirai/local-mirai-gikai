@@ -1,7 +1,11 @@
 import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import type { DifficultyLevelEnum } from "@/features/bill-difficulty/shared/types";
-import type { MiraiStance } from "../../shared/types";
+import type {
+  BillPublishStatus,
+  BillStatusEnum,
+  MiraiStance,
+} from "../../shared/types";
 
 // ============================================================
 // Bills
@@ -521,4 +525,64 @@ export async function findBillIdsWithPublicInterview(
   }
 
   return new Set(data.map((row) => row.bill_id));
+}
+
+// ============================================================
+// Top Page Bill Summary
+// ============================================================
+
+/**
+ * 会期内の議案の審議状況を取得（トップページの件数チップ用）。
+ */
+export async function findBillStatusesBySession(
+  councilSessionId: string
+): Promise<{ status: BillStatusEnum; publishStatus: BillPublishStatus }[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("bills")
+    .select("status, publish_status")
+    .eq("council_session_id", councilSessionId)
+    .in("publish_status", ["published", "coming_soon"]);
+
+  if (error) {
+    console.error("Failed to fetch bill statuses by session:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    status: row.status,
+    publishStatus: row.publish_status,
+  }));
+}
+
+export type BillSessionRef = {
+  id: string;
+  slug: string | null;
+  name: string;
+};
+
+/**
+ * 件数を出せる議案がある開会済み会期のうち、最も新しいものを返す。
+ */
+export async function findLatestSessionWithBills(
+  today: string
+): Promise<BillSessionRef | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("council_sessions")
+    .select("id, slug, name, bills!inner(id)")
+    .in("bills.publish_status", ["published", "coming_soon"])
+    .lte("start_date", today)
+    .order("start_date", { ascending: false })
+    .limit(1, { referencedTable: "bills" })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to fetch latest session with bills:", error);
+    return null;
+  }
+
+  if (!data) return null;
+  return { id: data.id, slug: data.slug, name: data.name };
 }
