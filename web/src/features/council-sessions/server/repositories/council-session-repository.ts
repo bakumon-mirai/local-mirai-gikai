@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import { siteConfig } from "@/config/site.config";
 import type { CouncilSession, PastCouncilSession } from "../../shared/types";
+import { mergePastCouncilSessions } from "../../shared/utils/merge-past-sessions";
 import { parseSessionMilestones } from "../../shared/utils/parse-session-milestones";
 
 type CouncilSessionRow = Omit<CouncilSession, "schedule_milestones"> & {
@@ -101,83 +102,66 @@ export async function findAllPastCouncilSessions(): Promise<
   PastCouncilSession[]
 > {
   const supabase = createAdminClient();
-  const byId = new Map<string, PastCouncilSession>();
 
-  const queries: Promise<void>[] = [];
+  const fetchBillSessions = async (): Promise<CouncilSession[]> => {
+    if (!siteConfig.features.bills) return [];
+    const { data, error } = await supabase
+      .from("council_sessions")
+      .select("*, bills!inner(id)")
+      .eq("bills.publish_status", "published")
+      .limit(1, { referencedTable: "bills" })
+      .order("start_date", { ascending: false });
+    if (error) {
+      throw new Error(
+        `Failed to fetch sessions with published bills: ${error.message}`
+      );
+    }
+    const sessions: CouncilSession[] = [];
+    for (const row of data ?? []) {
+      const { bills: _bills, ...sessionRow } =
+        row as unknown as CouncilSessionRow & {
+          bills: unknown;
+        };
+      const parsed = toCouncilSession(sessionRow);
+      if (parsed) sessions.push(parsed);
+    }
+    return sessions;
+  };
 
-  if (siteConfig.features.bills) {
-    queries.push(
-      (async () => {
-        const { data, error } = await supabase
-          .from("council_sessions")
-          .select("*, bills!inner(id)")
-          .eq("bills.publish_status", "published")
-          .limit(1, { referencedTable: "bills" })
-          .order("start_date", { ascending: false });
-        if (error) {
-          console.error(
-            "Failed to fetch sessions with published bills:",
-            error
-          );
-          return;
-        }
-        for (const row of data ?? []) {
-          const { bills: _bills, ...sessionRow } =
-            row as unknown as CouncilSessionRow & {
-              bills: unknown;
-            };
-          const parsed = toCouncilSession(sessionRow);
-          if (!parsed) continue;
-          const existing = byId.get(parsed.id);
-          byId.set(parsed.id, {
-            ...(existing ?? parsed),
-            hasBills: true,
-          });
-        }
-      })()
-    );
-  }
+  const fetchQuestionSessions = async (): Promise<CouncilSession[]> => {
+    if (!siteConfig.features.generalQuestions) return [];
+    const { data, error } = await supabase
+      .from("council_sessions")
+      .select("*, general_questions!inner(id)")
+      .eq("general_questions.publish_status", "published")
+      .limit(1, { referencedTable: "general_questions" })
+      .order("start_date", { ascending: false });
+    if (error) {
+      if (error.code === "42P01" || error.code === "PGRST205") {
+        return [];
+      }
+      throw new Error(
+        `Failed to fetch sessions with published general questions: ${error.message}`
+      );
+    }
+    const sessions: CouncilSession[] = [];
+    for (const row of data ?? []) {
+      const { general_questions: _questions, ...sessionRow } =
+        row as unknown as CouncilSessionRow & {
+          general_questions: unknown;
+        };
+      const parsed = toCouncilSession(sessionRow);
+      if (parsed) sessions.push(parsed);
+    }
+    return sessions;
+  };
 
-  if (siteConfig.features.generalQuestions) {
-    queries.push(
-      (async () => {
-        const { data, error } = await supabase
-          .from("council_sessions")
-          .select("*, general_questions!inner(id)")
-          .eq("general_questions.publish_status", "published")
-          .limit(1, { referencedTable: "general_questions" })
-          .order("start_date", { ascending: false });
-        if (error) {
-          if (error.code !== "42P01" && error.code !== "PGRST205") {
-            console.error(
-              "Failed to fetch sessions with published general questions:",
-              error
-            );
-          }
-          return;
-        }
-        for (const row of data ?? []) {
-          const { general_questions: _questions, ...sessionRow } =
-            row as unknown as CouncilSessionRow & {
-              general_questions: unknown;
-            };
-          const parsed = toCouncilSession(sessionRow);
-          if (!parsed) continue;
-          const existing = byId.get(parsed.id);
-          byId.set(parsed.id, {
-            ...(existing ?? parsed),
-            hasQuestions: true,
-          });
-        }
-      })()
-    );
-  }
+  const [billSessions, questionSessions] = await Promise.all([
+    fetchBillSessions(),
+    fetchQuestionSessions(),
+  ]);
 
-  await Promise.all(queries);
-
-  return [...byId.values()].sort((a, b) =>
-    b.start_date.localeCompare(a.start_date)
-  );
+  return mergePastCouncilSessions(billSessions, questionSessions);
 }
 
 /**

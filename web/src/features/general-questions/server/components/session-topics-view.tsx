@@ -200,6 +200,7 @@ export function SessionTopicsView({ questions }: SessionTopicsViewProps) {
   }
 
   const groups = buildTopicGroups(questions);
+  const questionsWithoutTopics = questions.filter((q) => q.topics.length === 0);
 
   if (groups.length === 0) {
     return <GeneralQuestionList questions={questions} />;
@@ -210,6 +211,14 @@ export function SessionTopicsView({ questions }: SessionTopicsViewProps) {
       {groups.map((group) => (
         <CategorySection key={group.categoryLabel} group={group} />
       ))}
+      {questionsWithoutTopics.length > 0 && (
+        <section>
+          <h2 className="font-bold text-mirai-text mb-4">
+            トピック未分類の質問
+          </h2>
+          <GeneralQuestionList questions={questionsWithoutTopics} />
+        </section>
+      )}
     </div>
   );
 }
