@@ -101,6 +101,8 @@ export async function findCurrentCouncilSession(
     candidates.push(activeWithEndDate);
   }
 
+  candidates.sort((a, b) => b.start_date.localeCompare(a.start_date));
+
   return selectCurrentCouncilSession(candidates, targetDate);
 }
 
