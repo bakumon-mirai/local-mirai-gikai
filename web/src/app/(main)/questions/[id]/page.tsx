@@ -9,6 +9,7 @@ import { QuestionChatView } from "@/features/general-questions/client/components
 import { getGeneralQuestionById } from "@/features/general-questions/server/loaders/get-general-question-by-id";
 import { questionTypeLabel } from "@/features/general-questions/shared/utils/question-type-label";
 import { routes } from "@/lib/routes";
+import { toSafeExternalUrl } from "@/lib/utils/safe-url";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -51,8 +52,10 @@ export default async function GeneralQuestionDetailPage({ params }: Props) {
     ? routes.sessionQuestions(session.slug)
     : routes.questions();
   const typeLabel = questionTypeLabel(question.question_type);
-  const sourceHref = question.source_url ?? siteConfig.councilBaseUrl;
-  const sourceLabel = question.source_url
+  const safeSourceUrl = toSafeExternalUrl(question.source_url);
+  const sourceHref =
+    safeSourceUrl ?? toSafeExternalUrl(siteConfig.councilBaseUrl);
+  const sourceLabel = safeSourceUrl
     ? `${siteConfig.councilName} 公式会議録を見る`
     : `${siteConfig.councilName} 公式サイトを見る`;
 

@@ -264,6 +264,13 @@ export function SearchResultTabs({ query, results }: Props) {
             renderCard={(c) => <CommitteeCard key={c.id} committee={c} />}
           />
         )}
+        {((tab === "bills" && bills.length === 0) ||
+          (tab === "questions" && questions.length === 0) ||
+          (tab === "committees" && committees.length === 0)) && (
+          <p className="text-center py-10 text-sm text-mirai-text-muted">
+            {TAB_LABELS[tab]}に一致する結果はありませんでした。
+          </p>
+        )}
       </div>
     </div>
   );

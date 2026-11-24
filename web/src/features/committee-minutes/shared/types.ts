@@ -9,7 +9,7 @@ export type CommitteeType =
   | "audit"
   | "management";
 
-/** 会議録の1発言 */
+/** 会議録の1発言（サーバー内部処理用） */
 export type CommitteeSpeech = {
   voiceNo: number;
   speakerLabel: string | null;
@@ -17,6 +17,15 @@ export type CommitteeSpeech = {
   text: string;
   /** やさしい表現に直した本文（任意） */
   simpleText?: string;
+};
+
+/** 公開表示用の1発言（原文 text を含まない） */
+export type PublicTranscriptSpeech = {
+  voiceNo: number;
+  speakerLabel: string | null;
+  speakerType: SpeakerType;
+  simpleText: string;
+  isNameCall: boolean;
 };
 
 /** 会議内の1議題 */

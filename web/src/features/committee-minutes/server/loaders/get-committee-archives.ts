@@ -3,10 +3,8 @@ import type {
   CommitteeArchive,
   CommitteeMeetingSummary,
 } from "../../shared/types";
-import {
-  buildArchives,
-  findAllMeetings,
-} from "../repositories/committee-meeting-repository";
+import { buildArchives } from "../../shared/utils/build-archives";
+import { findAllMeetings } from "../repositories/committee-meeting-repository";
 
 /**
  * 委員会一覧と全会議を取得する。

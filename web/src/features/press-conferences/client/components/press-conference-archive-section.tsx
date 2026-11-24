@@ -1,14 +1,13 @@
-"use client";
-
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
-import type { PressConference } from "../../shared/types";
+import { formatJapaneseDatePlain } from "@/lib/utils/format-japanese-date";
+import type { PressConferenceListItem } from "../../shared/types";
 
 type Props = {
-  pressConferences: PressConference[];
+  pressConferences: PressConferenceListItem[];
 };
 
 export function PressConferenceArchiveSection({ pressConferences }: Props) {
@@ -32,10 +31,7 @@ export function PressConferenceArchiveSection({ pressConferences }: Props) {
 
       <ul className="flex flex-col divide-y divide-mirai-border">
         {pressConferences.map((pc) => {
-          const formattedDate = new Date(pc.heldAt).toLocaleDateString(
-            "ja-JP",
-            { year: "numeric", month: "long", day: "numeric" }
-          );
+          const formattedDate = formatJapaneseDatePlain(pc.heldAt);
           return (
             <li key={pc.id}>
               <Link

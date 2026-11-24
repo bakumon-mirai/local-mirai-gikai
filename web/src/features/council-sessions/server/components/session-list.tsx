@@ -1,19 +1,21 @@
+import "server-only";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
-import type { CouncilSession } from "../../shared/types";
+import type { PastCouncilSession } from "../../shared/types";
 import {
   formatSessionPeriod,
   groupSessionsByYear,
 } from "../../shared/utils/group-sessions-by-year";
 
 interface SessionListProps {
-  sessions: CouncilSession[];
+  sessions: PastCouncilSession[];
 }
 
 export function SessionList({ sessions }: SessionListProps) {
-  const grouped = groupSessionsByYear(sessions);
+  const validSessions = sessions.filter((s) => Boolean(s.slug));
+  const grouped = groupSessionsByYear(validSessions);
 
   if (grouped.length === 0) {
     return (
@@ -32,11 +34,14 @@ export function SessionList({ sessions }: SessionListProps) {
           </h2>
           <ul className="flex flex-col divide-y divide-mirai-border">
             {yearSessions.map((session) => {
-              if (!session.slug) return null;
+              const slug = session.slug;
+              if (!slug) return null;
               const period = formatSessionPeriod(session);
-              const href = siteConfig.features.bills
-                ? routes.sessionBills(session.slug)
-                : routes.sessionQuestions(session.slug);
+              const linkToBills =
+                siteConfig.features.bills && session.hasBills !== false;
+              const href = linkToBills
+                ? routes.sessionBills(slug)
+                : routes.sessionQuestions(slug);
               return (
                 <li key={session.id}>
                   <Link

@@ -5,6 +5,7 @@ import type {
   CommitteeSearchResult,
   QuestionSearchResult,
 } from "../../shared/types/search-types";
+import { buildSafeIlikePattern } from "../../shared/utils/sanitize-search-query";
 
 /**
  * テーブル未作成による失敗か（マイグレーション適用前の環境）。
@@ -14,6 +15,9 @@ function isMissingTableError(error: { code?: string | null }): boolean {
 }
 
 export async function searchBills(query: string): Promise<BillSearchResult[]> {
+  const like = buildSafeIlikePattern(query);
+  if (!like) return [];
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("bill_contents")
@@ -34,39 +38,39 @@ export async function searchBills(query: string): Promise<BillSearchResult[]> {
     `
     )
     .eq("difficulty_level", "normal")
-    .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
+    .eq("bills.publish_status", "published")
+    .or(`title.ilike.${like},summary.ilike.${like}`)
+    .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) throw new Error(`Failed to search bills: ${error.message}`);
 
-  return (data ?? [])
-    .filter((row) => {
-      const bill = row.bills as { publish_status: string };
-      return bill.publish_status === "published";
-    })
-    .map((row) => {
-      const bill = row.bills as {
-        id: string;
-        published_at: string | null;
-        council_sessions: { name: string } | null;
-        bills_tags: Array<{ tags: { label: string } | null }>;
-      };
-      return {
-        id: bill.id,
-        title: row.title,
-        summary: row.summary,
-        session: bill.council_sessions?.name ?? "",
-        publishedAt: bill.published_at,
-        tags: bill.bills_tags
-          .map((bt) => bt.tags?.label)
-          .filter((l): l is string => l != null),
-      };
-    });
+  return (data ?? []).map((row) => {
+    const bill = row.bills as {
+      id: string;
+      published_at: string | null;
+      council_sessions: { name: string } | null;
+      bills_tags: Array<{ tags: { label: string } | null }>;
+    };
+    return {
+      id: bill.id,
+      title: row.title,
+      summary: row.summary,
+      session: bill.council_sessions?.name ?? "",
+      publishedAt: bill.published_at,
+      tags: bill.bills_tags
+        .map((bt) => bt.tags?.label)
+        .filter((l): l is string => l != null),
+    };
+  });
 }
 
 export async function searchGeneralQuestions(
   query: string
 ): Promise<QuestionSearchResult[]> {
+  const like = buildSafeIlikePattern(query);
+  if (!like) return [];
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("general_questions")
@@ -80,7 +84,8 @@ export async function searchGeneralQuestions(
     `
     )
     .eq("publish_status", "published")
-    .or(`summary.ilike.%${query}%,questioner_name.ilike.%${query}%`)
+    .or(`summary.ilike.${like},questioner_name.ilike.${like}`)
+    .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) {
@@ -139,8 +144,10 @@ function toCommitteeResult(
 export async function searchCommittees(
   query: string
 ): Promise<CommitteeSearchResult[]> {
+  const like = buildSafeIlikePattern(query);
+  if (!like) return [];
+
   const supabase = createAdminClient();
-  const like = `%${query}%`;
 
   const meetingsRes = await supabase
     .from("committee_meetings")
@@ -149,6 +156,7 @@ export async function searchCommittees(
     .or(
       `title.ilike.${like},summary.ilike.${like},committee_name.ilike.${like}`
     )
+    .order("meeting_date", { ascending: false })
     .limit(50);
 
   if (meetingsRes.error) {
@@ -192,5 +200,7 @@ export async function searchCommittees(
     byId.set(meeting.id, existing);
   }
 
-  return [...byId.values()].slice(0, 50);
+  return [...byId.values()]
+    .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
+    .slice(0, 50);
 }

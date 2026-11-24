@@ -1,17 +1,25 @@
-import type { CommitteeMeetingTopic, CommitteeSpeech } from "../types";
+import type {
+  CommitteeMeetingTopic,
+  CommitteeSpeech,
+  PublicTranscriptSpeech,
+} from "../types";
+import { isNameCallSpeech } from "./normalize-speeches";
 
-/** 原文ページの1セクション（議題見出し＋その範囲の発言） */
+/** 会議のやり取りページの1セクション（議題見出し＋その範囲の発言） */
 export type TranscriptSection = {
   /** 対応する議題。冒頭の開会手続き等はnull */
   topic: CommitteeMeetingTopic | null;
   speeches: CommitteeSpeech[];
 };
 
+/** 公開表示用の1セクション（原文 text を含まない simpleText のみ） */
+export type PublicTranscriptSection = {
+  topic: CommitteeMeetingTopic | null;
+  speeches: PublicTranscriptSpeech[];
+};
+
 /**
  * 発言一覧を議題の発言範囲（startVoiceNo〜endVoiceNo）でセクション分割する。
- * - 最初の議題より前の発言（開会手続き等）は先頭のtopic=nullセクションにまとめる
- * - 議題の境界となる発言（前議題の締めと次議題の宣言を含む）は次の議題側に含める
- * - 議題に範囲情報がない場合はセクションを作らない（発言は前のセクションに残る）
  */
 export function buildTranscriptSections(
   speeches: CommitteeSpeech[],
@@ -47,4 +55,28 @@ export function buildTranscriptSections(
   });
 
   return sections;
+}
+
+/**
+ * 公開ページ用に原文 `text` を完全に除去し、`simpleText` が存在する発言のみを
+ * セクション単位で組み立てる。
+ */
+export function buildPublicTranscriptSections(
+  speeches: CommitteeSpeech[],
+  topics: CommitteeMeetingTopic[]
+): PublicTranscriptSection[] {
+  return buildTranscriptSections(speeches, topics)
+    .map((section) => ({
+      topic: section.topic,
+      speeches: section.speeches
+        .filter((s) => Boolean(s.simpleText?.trim()))
+        .map((s) => ({
+          voiceNo: s.voiceNo,
+          speakerLabel: s.speakerLabel,
+          speakerType: s.speakerType,
+          simpleText: (s.simpleText ?? "").trim(),
+          isNameCall: isNameCallSpeech(s),
+        })),
+    }))
+    .filter((section) => section.speeches.length > 0);
 }

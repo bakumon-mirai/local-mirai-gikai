@@ -1,3 +1,4 @@
+import "server-only";
 import {
   Baby,
   Shield,
@@ -21,6 +22,7 @@ import type {
   TopicEntry,
   TopicGroup,
 } from "../../shared/utils/build-topic-groups";
+import { GeneralQuestionList } from "./general-question-list";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Baby,
@@ -82,12 +84,6 @@ const CATEGORY_STYLE: Record<
     header: "bg-white/60 border-indigo-200",
     text: "text-indigo-700",
     iconBg: "bg-indigo-100",
-  },
-  "地域・国際交流": {
-    card: "bg-amber-50 border-amber-200",
-    header: "bg-white/60 border-amber-200",
-    text: "text-amber-700",
-    iconBg: "bg-amber-100",
   },
   "観光・地域振興": {
     card: "bg-amber-50 border-amber-200",
@@ -204,6 +200,10 @@ export function SessionTopicsView({ questions }: SessionTopicsViewProps) {
   }
 
   const groups = buildTopicGroups(questions);
+
+  if (groups.length === 0) {
+    return <GeneralQuestionList questions={questions} />;
+  }
 
   return (
     <div className="flex flex-col gap-10">

@@ -9,11 +9,11 @@ describe("normalizeSpeeches", () => {
         voiceNo: 1,
         speakerLabel: null,
         speakerType: "unknown",
-        text: "　　　令和八年四月二十八日（火曜日）\n　　　午　後　四　時　一　分　開　会\n◯井上博行委員長　それでは、開会いたします。\n　議題は配付のとおりです。",
+        text: "　　　令和八年四月二十八日（火曜日）\n　　　午　後　四　時　一　分　開　会\n◯山田太郎委員長　それでは、開会いたします。\n　議題は配付のとおりです。",
       },
       {
         voiceNo: 2,
-        speakerLabel: "佐々木空港政策課長",
+        speakerLabel: "鈴木政策課長",
         speakerType: "executive",
         text: "説明いたします。",
       },
@@ -22,13 +22,29 @@ describe("normalizeSpeeches", () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({
       voiceNo: 1,
-      speakerLabel: "井上博行委員長",
+      speakerLabel: "山田太郎委員長",
       speakerType: "chairperson",
     });
     expect(result[0].text).toBe(
       "それでは、開会いたします。\n　議題は配付のとおりです。"
     );
-    expect(result[1].speakerLabel).toBe("佐々木空港政策課長");
+    expect(result[1].speakerLabel).toBe("鈴木政策課長");
+  });
+
+  it("複数発言へ分割されたブロックでは simpleText を重複付与しない", () => {
+    const speeches: CommitteeSpeech[] = [
+      {
+        voiceNo: 1,
+        speakerLabel: null,
+        speakerType: "unknown",
+        text: "◯山田太郎委員長　開会します。\n◯佐藤花子委員　質問します。",
+        simpleText: "要約文",
+      },
+    ];
+    const result = normalizeSpeeches(speeches);
+    expect(result).toHaveLength(2);
+    expect(result[0].simpleText).toBeUndefined();
+    expect(result[1].simpleText).toBeUndefined();
   });
 
   it("記録行だけのブロックは取り除く", () => {
@@ -47,14 +63,14 @@ describe("normalizeSpeeches", () => {
     const speeches: CommitteeSpeech[] = [
       {
         voiceNo: 24,
-        speakerLabel: "堀",
+        speakerLabel: "佐藤",
         speakerType: "executive",
-        text: "大助委員　今のに関連して伺います。",
+        text: "花子委員　今のに関連して伺います。",
       },
     ];
     const result = normalizeSpeeches(speeches);
     expect(result[0]).toMatchObject({
-      speakerLabel: "堀大助委員",
+      speakerLabel: "佐藤花子委員",
       speakerType: "member",
       text: "今のに関連して伺います。",
     });
@@ -64,7 +80,7 @@ describe("normalizeSpeeches", () => {
     const speeches: CommitteeSpeech[] = [
       {
         voiceNo: 3,
-        speakerLabel: "堀大助委員",
+        speakerLabel: "佐藤花子委員",
         speakerType: "member",
         text: "質問します。",
         simpleText: "質問するよ。",
@@ -80,14 +96,14 @@ describe("isNameCallSpeech", () => {
     speakerType: CommitteeSpeech["speakerType"] = "chairperson"
   ): CommitteeSpeech => ({
     voiceNo: 1,
-    speakerLabel: "井上博行委員長",
+    speakerLabel: "山田太郎委員長",
     speakerType,
     text,
   });
 
   it("指名だけの発言を判定する", () => {
-    expect(isNameCallSpeech(speech("山田空港事業課長。"))).toBe(true);
-    expect(isNameCallSpeech(speech("秋田交通政策課長。"))).toBe(true);
+    expect(isNameCallSpeech(speech("田中事業課長。"))).toBe(true);
+    expect(isNameCallSpeech(speech("高橋交通課長。"))).toBe(true);
   });
 
   it("指名以外の発言は判定しない", () => {
@@ -100,8 +116,6 @@ describe("isNameCallSpeech", () => {
   });
 
   it("委員長以外の発言は対象外", () => {
-    expect(isNameCallSpeech(speech("山田空港事業課長。", "member"))).toBe(
-      false
-    );
+    expect(isNameCallSpeech(speech("田中事業課長。", "member"))).toBe(false);
   });
 });

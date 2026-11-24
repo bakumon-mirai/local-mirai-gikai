@@ -1,5 +1,3 @@
-"use client";
-
 import { MessageCircle, User } from "lucide-react";
 import type { GeneralQuestionTopic } from "../../shared/types";
 

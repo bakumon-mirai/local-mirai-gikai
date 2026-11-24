@@ -1,13 +1,12 @@
-"use client";
-
 import { ArrowRight, CalendarDays, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
-import type { PressConference } from "../../shared/types";
+import { formatJapaneseDatePlain } from "@/lib/utils/format-japanese-date";
+import type { PressConferenceListItem } from "../../shared/types";
 
 type Props = {
-  pressConferences: PressConference[];
+  pressConferences: PressConferenceListItem[];
 };
 
 export function PressConferenceList({ pressConferences }: Props) {
@@ -34,16 +33,7 @@ export function PressConferenceList({ pressConferences }: Props) {
       ) : (
         <div className="flex flex-col gap-3">
           {pressConferences.map((pc) => {
-            const announcements = pc.items.filter(
-              (item) => item.itemType === "announcement"
-            );
-            const qaCount = pc.items.filter(
-              (item) => item.itemType === "qa"
-            ).length;
-            const formattedDate = new Date(pc.heldAt).toLocaleDateString(
-              "ja-JP",
-              { year: "numeric", month: "long", day: "numeric" }
-            );
+            const formattedDate = formatJapaneseDatePlain(pc.heldAt);
 
             return (
               <Link
@@ -62,20 +52,20 @@ export function PressConferenceList({ pressConferences }: Props) {
                 </div>
 
                 <div className="px-5 py-4 flex flex-col gap-3">
-                  {announcements.length > 0 && (
+                  {pc.announcementTitles.length > 0 && (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-mirai-text-muted">
                         <Megaphone className="w-3.5 h-3.5" />
                         発表事項
                       </div>
                       <ul className="flex flex-col gap-1.5">
-                        {announcements.map((item) => (
+                        {pc.announcementTitles.map((title, idx) => (
                           <li
-                            key={item.id}
+                            key={`${pc.id}-ann-${idx}`}
                             className="flex items-start gap-2 text-sm text-mirai-text"
                           >
                             <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
-                            {item.title}
+                            {title}
                           </li>
                         ))}
                       </ul>
@@ -84,7 +74,7 @@ export function PressConferenceList({ pressConferences }: Props) {
 
                   <div className="flex items-center justify-between pt-1 border-t border-mirai-border">
                     <span className="text-xs text-mirai-text-muted">
-                      質疑応答 {qaCount}件
+                      質疑応答 {pc.qaCount}件
                     </span>
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-primary-accent group-hover:gap-2 transition-all">
                       詳しく読む

@@ -56,3 +56,15 @@ export type PressConferenceRef = {
 export type PressConferenceSummary = PressConferenceRef & {
   topics: { id: string; title: string }[];
 };
+
+/**
+ * 一覧・アーカイブセクション用の軽量な会見情報（質疑全文 turns / detail を含まない）。
+ */
+export type PressConferenceListItem = {
+  id: string;
+  slug: string;
+  title: string;
+  heldAt: string;
+  announcementTitles: string[];
+  qaCount: number;
+};
