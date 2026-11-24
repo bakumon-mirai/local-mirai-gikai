@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { randomUUID } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   adminClient,
   getAnonClient,
@@ -23,12 +24,14 @@ describe("get_admin_users() 関数", () => {
 
   it("admin ユーザーのみを返す", async () => {
     const admin1 = await createTestAdminUser(
-      `admin1-${Date.now()}@example.com`
+      `admin1-${randomUUID()}@example.com`
     );
     const admin2 = await createTestAdminUser(
-      `admin2-${Date.now()}@example.com`
+      `admin2-${randomUUID()}@example.com`
     );
-    const normalUser = await createTestUser(`normal-${Date.now()}@example.com`);
+    const normalUser = await createTestUser(
+      `normal-${randomUUID()}@example.com`
+    );
     testUsers.push(admin1, admin2, normalUser);
 
     const { data, error } = await adminClient.rpc("get_admin_users");

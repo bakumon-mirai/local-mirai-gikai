@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   cleanupTestUser,
@@ -89,7 +90,7 @@ describe("RLS default deny（全29テーブル共通）", () => {
     const password = "test-password-123";
 
     beforeAll(async () => {
-      email = `rls-test-${Date.now()}@example.com`;
+      email = `rls-test-${randomUUID()}@example.com`;
       const user = await createTestUser(email, password);
       userId = user.id;
     });

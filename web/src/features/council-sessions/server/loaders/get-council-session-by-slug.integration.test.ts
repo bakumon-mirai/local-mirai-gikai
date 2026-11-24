@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  createTestDietSession,
-  cleanupTestDietSession,
+  createTestCouncilSession,
+  cleanupTestCouncilSession,
 } from "@test-utils/utils";
 
 // unstable_cache はモジュール初期化時に評価されるため、
@@ -20,14 +20,14 @@ describe("getCouncilSessionBySlug 統合テスト", () => {
 
   afterEach(async () => {
     for (const id of sessionIds) {
-      await cleanupTestDietSession(id);
+      await cleanupTestCouncilSession(id);
     }
     sessionIds = [];
   });
 
   it("slug で会期を取得できる", async () => {
     const slug = `test-slug-loader-${Date.now()}`;
-    const session = await createTestDietSession({ slug });
+    const session = await createTestCouncilSession({ slug });
     sessionIds.push(session.id);
 
     const result = await getCouncilSessionBySlug(slug);

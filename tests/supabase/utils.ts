@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../../packages/supabase/types/supabase.types";
 
@@ -42,7 +43,7 @@ export type TestUser = {
 
 /** admin 権限を持つテストユーザーを作成 */
 export async function createTestAdminUser(
-  email = `test-admin-${Date.now()}@example.com`,
+  email = `test-admin-${randomUUID()}@example.com`,
   password = "test-password-123"
 ): Promise<TestUser> {
   const { data, error } = await adminClient.auth.admin.createUser({
@@ -57,7 +58,7 @@ export async function createTestAdminUser(
 
 /** 一般テストユーザーを作成 */
 export async function createTestUser(
-  email = `test-user-${Date.now()}@example.com`,
+  email = `test-user-${randomUUID()}@example.com`,
   password = "test-password-123"
 ): Promise<TestUser> {
   const { data, error } = await adminClient.auth.admin.createUser({
@@ -92,7 +93,7 @@ export async function createTestCouncilSession(
     name: `テスト定例会 ${Date.now()}`,
     start_date: "2025-01-01",
     end_date: "2025-06-30",
-    slug: `test-session-${Date.now()}`,
+    slug: `test-session-${randomUUID()}`,
     is_active: false,
     ...overrides,
   };
@@ -111,11 +112,6 @@ export async function cleanupTestCouncilSession(
 ): Promise<void> {
   await adminClient.from("council_sessions").delete().eq("id", sessionId);
 }
-
-/** @deprecated createTestCouncilSession を使用してください */
-export const createTestDietSession = createTestCouncilSession;
-/** @deprecated cleanupTestCouncilSession を使用してください */
-export const cleanupTestDietSession = cleanupTestCouncilSession;
 
 /** テスト用 bill を作成 */
 export async function createTestBill(
@@ -224,7 +220,7 @@ export async function createTestTag(
   }> = {}
 ) {
   const defaults = {
-    label: `テストタグ-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    label: `テストタグ-${randomUUID()}`,
     ...overrides,
   };
   const { data, error } = await adminClient
@@ -252,34 +248,6 @@ export async function createTestBillTag(billId: string, tagId: string) {
   return data;
 }
 
-/** テスト用 mirai_stances を作成
- * 現在のDBにはmirai_stancesテーブルが存在しないためモックを返す
- */
-export async function createTestMiraiStance(
-  billId: string,
-  overrides: Partial<{
-    type: "for" | "against" | "neutral";
-    comment: string;
-  }> = {}
-): Promise<{
-  id: string;
-  bill_id: string;
-  type: "for" | "against" | "neutral";
-  comment: string;
-  created_at: string;
-  updated_at: string;
-}> {
-  const now = new Date().toISOString();
-  return {
-    id: `mock-mirai-stance-${Date.now()}`,
-    bill_id: billId,
-    type: overrides.type ?? "for",
-    comment: overrides.comment ?? "テストコメント",
-    created_at: now,
-    updated_at: now,
-  };
-}
-
 /** テスト用 preview_tokens を作成 */
 export async function createTestPreviewToken(
   billId: string,
@@ -290,7 +258,7 @@ export async function createTestPreviewToken(
 ) {
   const defaults = {
     bill_id: billId,
-    token: `test-token-${Date.now()}`,
+    token: `test-token-${randomUUID()}`,
     expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     ...overrides,
   };

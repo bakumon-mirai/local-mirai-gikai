@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  createTestDietSession,
-  cleanupTestDietSession,
+  createTestCouncilSession,
+  cleanupTestCouncilSession,
 } from "@test-utils/utils";
 
 // unstable_cache はモジュール初期化時に評価されるため、
@@ -19,13 +19,13 @@ describe("getActiveCouncilSession 統合テスト", () => {
 
   afterEach(async () => {
     for (const id of sessionIds) {
-      await cleanupTestDietSession(id);
+      await cleanupTestCouncilSession(id);
     }
     sessionIds.length = 0;
   });
 
   it("アクティブな会期を返す", async () => {
-    const session = await createTestDietSession({ is_active: true });
+    const session = await createTestCouncilSession({ is_active: true });
     sessionIds.push(session.id);
 
     const result = await getActiveCouncilSession();
