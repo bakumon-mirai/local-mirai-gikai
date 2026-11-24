@@ -3,9 +3,12 @@
  */
 export const CACHE_TAGS = {
   BILLS: "bills",
+  COMMITTEE_MINUTES: "committee-minutes",
   COUNCIL_SESSIONS: "council-sessions",
   DIET_SESSIONS: "diet-sessions",
+  GENERAL_QUESTIONS: "general-questions",
   INTERVIEW_CONFIGS: "interview-configs",
+  PRESS_CONFERENCES: "press-conferences",
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

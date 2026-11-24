@@ -26,6 +26,10 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function SessionBillsPage({ params }: Props) {
+  if (!siteConfig.features.bills) {
+    notFound();
+  }
+
   const { slug } = await params;
   const session = await getCouncilSessionBySlug(slug);
 

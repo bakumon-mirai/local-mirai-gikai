@@ -29,6 +29,20 @@ export const siteConfig = {
    * UI テキストや AI プロンプトから参照します。
    */
   residentTerm: "市民",
+  /**
+   * トップページの構成パターン
+   * - "bills": 議案中心（Tier 2：議案のAI解説が揃っている自治体向け・既定）
+   * - "archive": 議事録・活動中心（Tier 1 や議案本文が薄い自治体向け）
+   */
+  homeLayout: "bills" as "bills" | "archive",
+  /** 首長の役職名（知事・市長・区長・町長・村長） */
+  executiveTitle: "市長",
+  /** 首長の氏名（任意。空文字列なら executiveTitle のみを表示） */
+  executiveName: "",
+  /** 行政の呼称（県政・市政・区政・町政・村政）。テーマ・分類ラベルに使用 */
+  governmentTerm: "市政",
+  /** 定例会の通常開催月（市区町村は [3, 6, 9, 12]、都道府県は [2, 6, 9, 12] 等） */
+  regularSessionMonths: [3, 6, 9, 12] as readonly number[],
   keywords: [
     "みらい議会＠サンプル市",
     "議案",
@@ -110,19 +124,30 @@ export const siteConfig = {
     disclosure: "" as string,
   },
   /**
-   * AI機能の有効/無効設定
-   * 本番環境のコスト管理のため、機能ごとにオン/オフを切り替えられます。
+   * 機能の有効/無効設定（調査結果に合わせてパーツ単位でオン/オフを切り替えられます）
    */
   features: {
+    /** 議案一覧・議案詳細 */
+    bills: true as boolean,
+    /** 会派別賛否の表示（会派が存在しない議会や可否のみ公開の自治体では false） */
+    showFactionStances: true as boolean,
+    /** 一般質問・代表質問アーカイブ */
+    generalQuestions: true as boolean,
+    /** 委員会議事録アーカイブ */
+    committeeMinutes: true as boolean,
+    /** 首長記者会見アーカイブ */
+    pressConferences: true as boolean,
+    /** 横断検索・テーマから探す */
+    search: true as boolean,
     /** AIチャット機能（議案への質問・テキスト選択からの質問）*/
-    aiChat: true,
+    aiChat: true as boolean,
     /**
      * AIインタビュー機能（議案当事者へのヒアリング）
      *
      * 住民の意見と連絡先を収集する機能です。個人情報の取り扱い方針と
      * 運営体制を定めてから有効化してください（既定は無効）。
      */
-    aiInterview: false,
+    aiInterview: false as boolean,
     /**
      * チームみらいセクションの表示（トップページ・フッター・デスクトップメニュー）
      *
