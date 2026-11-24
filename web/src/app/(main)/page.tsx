@@ -106,13 +106,18 @@ async function ArchiveHome() {
 }
 
 async function BillsHome() {
-  const { billsByTag, featuredBills, previousSessionData, activeSessionSlug } =
-    await loadHomeData();
-
-  const [currentSession, currentDifficulty] = await Promise.all([
+  const [homeData, currentSession, currentDifficulty] = await Promise.all([
+    siteConfig.features.bills ? loadHomeData() : Promise.resolve(null),
     getCurrentCouncilSession(getJapanTime()),
-    getDifficultyLevel(),
+    siteConfig.features.aiChat
+      ? getDifficultyLevel()
+      : Promise.resolve("normal" as const),
   ]);
+
+  const billsByTag = homeData?.billsByTag ?? [];
+  const featuredBills = homeData?.featuredBills ?? [];
+  const previousSessionData = homeData?.previousSessionData ?? null;
+  const activeSessionSlug = homeData?.activeSessionSlug ?? null;
 
   const featuredBillIds = new Set(featuredBills.map((b) => b.id));
   const chatBills = buildHomeChatBills(billsByTag, featuredBills);
@@ -123,21 +128,23 @@ async function BillsHome() {
 
       <CurrentCouncilSession session={currentSession} />
 
-      <Container className="">
-        <div className="py-10">
-          <main className="flex flex-col gap-16">
-            <FeaturedBillSection bills={featuredBills} />
+      {siteConfig.features.bills && (
+        <Container className="">
+          <div className="py-10">
+            <main className="flex flex-col gap-16">
+              <FeaturedBillSection bills={featuredBills} />
 
-            <BillsByTagSection
-              billsByTag={billsByTag}
-              featuredBillIds={featuredBillIds}
-              sessionSlug={activeSessionSlug}
-            />
-          </main>
-        </div>
-      </Container>
+              <BillsByTagSection
+                billsByTag={billsByTag}
+                featuredBillIds={featuredBillIds}
+                sessionSlug={activeSessionSlug}
+              />
+            </main>
+          </div>
+        </Container>
+      )}
 
-      {previousSessionData && (
+      {siteConfig.features.bills && previousSessionData && (
         <div className="bg-mirai-surface-muted py-10">
           <Container>
             <PreviousSessionSection

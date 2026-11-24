@@ -57,19 +57,51 @@ export async function findCurrentCouncilSession(
 ): Promise<CouncilSession | null> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("council_sessions")
-    .select("*")
-    .lte("start_date", targetDate)
-    .order("start_date", { ascending: false })
-    .limit(5);
+  // 最新の開始済み会期（end_date=null が後続会期で打ち切られたかを判定するため）と、
+  // end_date >= targetDate を満たす開催中候補を別クエリで取得し、途中に多数の終了済み臨時会があっても取りこぼさない。
+  const [latestStartedRes, activeWithEndDateRes] = await Promise.all([
+    supabase
+      .from("council_sessions")
+      .select("*")
+      .lte("start_date", targetDate)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("council_sessions")
+      .select("*")
+      .lte("start_date", targetDate)
+      .gte("end_date", targetDate)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    console.error("Failed to fetch current council session:", error);
+  if (latestStartedRes.error) {
+    console.error(
+      "Failed to fetch latest started council session:",
+      latestStartedRes.error
+    );
+    return null;
+  }
+  if (activeWithEndDateRes.error) {
+    console.error(
+      "Failed to fetch active council session with end_date:",
+      activeWithEndDateRes.error
+    );
     return null;
   }
 
-  return selectCurrentCouncilSession(toCouncilSessions(data ?? []), targetDate);
+  const candidates: CouncilSession[] = [];
+  const latestStarted = toCouncilSession(latestStartedRes.data);
+  if (latestStarted) candidates.push(latestStarted);
+
+  const activeWithEndDate = toCouncilSession(activeWithEndDateRes.data);
+  if (activeWithEndDate && activeWithEndDate.id !== latestStarted?.id) {
+    candidates.push(activeWithEndDate);
+  }
+
+  return selectCurrentCouncilSession(candidates, targetDate);
 }
 
 /**

@@ -75,4 +75,37 @@ describe("selectCurrentCouncilSession", () => {
       "s6"
     );
   });
+
+  it("終了済み臨時会が5件以上あっても最新の開始済み会期と開催中候補の組合せから定例会を返す", () => {
+    const latestClosedExtra = makeSession({
+      id: "extra-5",
+      name: "令和8年6月第5回臨時会",
+      start_date: "2026-06-10",
+      end_date: "2026-06-10",
+    });
+    const june = makeSession({
+      id: "s6",
+      name: "令和8年6月定例会",
+      start_date: "2026-06-01",
+      end_date: "2026-06-30",
+    });
+
+    // 2クエリで [最新開始済み会期, end_date >= targetDate の最新会期] を渡した場合
+    expect(
+      selectCurrentCouncilSession([latestClosedExtra, june], "2026-06-15")?.id
+    ).toBe("s6");
+
+    // 5件超の終了済み臨時会がすべて含まれる配列を渡した場合も正しく定例会を返す
+    const manyClosed = Array.from({ length: 6 }, (_, i) =>
+      makeSession({
+        id: `extra-${6 - i}`,
+        name: `令和8年6月第${6 - i}回臨時会`,
+        start_date: `2026-06-${String(12 - i).padStart(2, "0")}`,
+        end_date: `2026-06-${String(12 - i).padStart(2, "0")}`,
+      })
+    );
+    expect(
+      selectCurrentCouncilSession([...manyClosed, june], "2026-06-15")?.id
+    ).toBe("s6");
+  });
 });
