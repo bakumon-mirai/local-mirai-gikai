@@ -24,8 +24,9 @@ export async function BillDetailLayout({
   currentDifficulty,
 }: BillDetailLayoutProps) {
   const showStances =
-    bill.status === "preparing" ||
-    (bill.faction_stances && bill.faction_stances.length > 0);
+    siteConfig.features.showFactionStances &&
+    (bill.status === "preparing" ||
+      (bill.faction_stances && bill.faction_stances.length > 0));
 
   const [interviewConfig, publicReportsResult] = await Promise.all([
     getInterviewConfig(bill.id),

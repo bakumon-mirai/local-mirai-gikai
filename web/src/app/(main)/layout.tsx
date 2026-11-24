@@ -5,6 +5,8 @@ import { Header } from "@/components/header";
 import { AuthGate } from "@/components/layouts/auth-gate";
 import { Footer } from "@/components/layouts/footer/footer";
 import { MainLayout } from "@/components/layouts/main-layout";
+import { MobileBottomNav } from "@/components/layouts/navigation/mobile-bottom-nav";
+import { siteConfig } from "@/config/site.config";
 import { env } from "@/lib/env";
 import { RubyfulInitializer } from "@/lib/rubyful";
 
@@ -18,7 +20,9 @@ export default function MainGroupLayout({
       <SpeedInsights />
       <GoogleAnalytics gaId={env.analytics.gaTrackingId ?? ""} />
       <RubyfulInitializer />
-      <AuthGate />
+      {(siteConfig.features.aiChat || siteConfig.features.aiInterview) && (
+        <AuthGate />
+      )}
 
       <MainLayout>
         <Header />
@@ -26,6 +30,7 @@ export default function MainGroupLayout({
           {children}
         </main>
         <Footer />
+        {siteConfig.homeLayout === "archive" && <MobileBottomNav />}
       </MainLayout>
     </>
   );

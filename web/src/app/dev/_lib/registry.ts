@@ -11,6 +11,17 @@ type PreviewGroup = {
 
 export const previewRegistry: PreviewGroup[] = [
   {
+    name: "Top Layout & Parts",
+    items: [
+      {
+        path: "/dev/top-preview",
+        label: "トップ構成・パーツ選択シミュレーター",
+        description:
+          "bills / archive 型の切替と各パーツ ON/OFF をブラウザ上で確認し、siteConfig 設定を生成できます",
+      },
+    ],
+  },
+  {
     name: "UI Primitives",
     items: [
       {

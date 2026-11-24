@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { siteConfig } from "@/config/site.config";
 import { getDifficultyLevel } from "@/features/bill-difficulty/server/loaders/get-difficulty-level";
 import { getBillById } from "@/features/bills/server/loaders/get-bill-by-id";
 import { BillDetailLayout } from "@/features/bills/server/components/bill-detail/bill-detail-layout";
@@ -15,6 +16,10 @@ interface BillDetailPageProps {
 export async function generateMetadata({
   params,
 }: BillDetailPageProps): Promise<Metadata> {
+  if (!siteConfig.features.bills) {
+    return { title: "ページが見つかりません" };
+  }
+
   const { id } = await params;
   const bill = await getBillById(id);
 
@@ -62,6 +67,10 @@ export async function generateMetadata({
 }
 
 export default async function BillDetailPage({ params }: BillDetailPageProps) {
+  if (!siteConfig.features.bills) {
+    notFound();
+  }
+
   const { id } = await params;
   const [billWithContent, currentDifficulty] = await Promise.all([
     getBillById(id),
