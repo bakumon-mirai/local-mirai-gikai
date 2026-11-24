@@ -28,6 +28,9 @@ export type MobileNavItem = NavItem & { icon: MobileNavIcon };
 /** 一般質問の実体ページ（/questions はここへリダイレクトされる） */
 const SESSION_QUESTIONS_RE = /^\/sessions\/[^/]+\/questions(\/|$)/;
 
+/** 議案詳細ページとその配下（意見一覧等） */
+const BILL_DETAIL_RE = /^\/bills(\/|$)/;
+
 /**
  * PC 横並びグローバルナビの項目を有効パーツから組み立てる。
  */
@@ -53,6 +56,7 @@ export function buildPcNavItems(
     items.push({
       href: routes.sessions(),
       label: "議案",
+      alsoActiveOn: BILL_DETAIL_RE,
       excludes: SESSION_QUESTIONS_RE,
     });
   } else if (features.generalQuestions) {

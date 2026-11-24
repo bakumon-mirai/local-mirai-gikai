@@ -145,4 +145,67 @@ describe("resolveSessionSlots", () => {
     expect(slots[0].status).toBe("finished");
     expect(slots[1].status).toBe("in_session");
   });
+
+  it("5月末に開会する6月定例会は6月枠へ紐付けられ消えない", () => {
+    const sessions = [
+      makeSession({
+        id: "s6-early",
+        name: "令和8年6月定例会",
+        start_date: "2026-05-29",
+        end_date: "2026-06-20",
+      }),
+    ];
+    const slots = resolveSessionSlots(sessions, "2026-05-10", [3, 6, 9, 12]);
+    expect(slots.map((s) => [s.month, s.status])).toEqual([
+      [3, "upcoming"],
+      [6, "next"],
+      [9, "upcoming"],
+      [12, "upcoming"],
+    ]);
+    expect(slots[1].session?.id).toBe("s6-early");
+  });
+
+  it("通常開催月に含まれない定例会も帯に残し強調対象になる", () => {
+    const sessions = [
+      makeSession({
+        id: "s5-reg",
+        name: "令和8年5月定例会",
+        start_date: "2026-05-10",
+        end_date: "2026-05-20",
+      }),
+    ];
+    const slots = resolveSessionSlots(sessions, "2026-05-15", [3, 6, 9, 12]);
+    expect(slots.map((s) => [s.month, s.status])).toEqual([
+      [3, "upcoming"],
+      [5, "in_session"],
+      [6, "upcoming"],
+      [9, "upcoming"],
+      [12, "upcoming"],
+    ]);
+  });
+
+  it("期間が重なる定例会が複数あっても in_session は開始日が新しい1件だけになる", () => {
+    const sessions = [
+      makeSession({
+        id: "s3-overlap",
+        name: "令和8年3月定例会",
+        start_date: "2026-03-01",
+        end_date: "2026-06-15",
+      }),
+      makeSession({
+        id: "s6-overlap",
+        name: "令和8年6月定例会",
+        start_date: "2026-06-01",
+        end_date: "2026-06-25",
+      }),
+    ];
+    const slots = resolveSessionSlots(sessions, "2026-06-10", [3, 6, 9, 12]);
+    const highlighted = slots.filter(
+      (s) => s.status === "in_session" || s.status === "next"
+    );
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0].month).toBe(6);
+    expect(highlighted[0].status).toBe("in_session");
+    expect(slots[0].status).toBe("finished");
+  });
 });

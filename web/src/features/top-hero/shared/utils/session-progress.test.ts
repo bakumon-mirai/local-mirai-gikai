@@ -44,6 +44,70 @@ describe("buildSessionSteps", () => {
       { date: "12月18日", label: "議案の採決・閉会", status: "upcoming" },
     ]);
   });
+
+  it("採決日と閉会日が同じ場合、当日は current で翌日以降は done になる", () => {
+    const milestones = {
+      representativeQuestions: null,
+      generalQuestions: null,
+      standingCommittees: null,
+      billVote: "2026-12-18",
+    };
+
+    const onClosingDay = buildSessionSteps(
+      "2026-12-01",
+      "2026-12-18",
+      "2026-12-18",
+      milestones
+    );
+    expect(onClosingDay.at(-1)).toEqual({
+      date: "12月18日",
+      label: "議案の採決・閉会",
+      status: "current",
+    });
+
+    const afterClosingDay = buildSessionSteps(
+      "2026-12-01",
+      "2026-12-18",
+      "2026-12-19",
+      milestones
+    );
+    expect(afterClosingDay.at(-1)).toEqual({
+      date: "12月18日",
+      label: "議案の採決・閉会",
+      status: "done",
+    });
+  });
+
+  it("採決日と閉会日が別日の場合、それぞれ当日は current で翌日以降は done になる", () => {
+    const milestones = {
+      representativeQuestions: null,
+      generalQuestions: null,
+      standingCommittees: null,
+      billVote: "2026-12-17",
+    };
+
+    const onVoteDay = buildSessionSteps(
+      "2026-12-01",
+      "2026-12-18",
+      "2026-12-17",
+      milestones
+    );
+    expect(onVoteDay.slice(1)).toEqual([
+      { date: "12月17日", label: "議案の採決", status: "current" },
+      { date: "12月18日", label: "閉会", status: "upcoming" },
+    ]);
+
+    const onClosingDay = buildSessionSteps(
+      "2026-12-01",
+      "2026-12-18",
+      "2026-12-18",
+      milestones
+    );
+    expect(onClosingDay.slice(1)).toEqual([
+      { date: "12月17日", label: "議案の採決", status: "done" },
+      { date: "12月18日", label: "閉会", status: "current" },
+    ]);
+  });
 });
 
 describe("buildInSessionLead / formatSessionRange", () => {

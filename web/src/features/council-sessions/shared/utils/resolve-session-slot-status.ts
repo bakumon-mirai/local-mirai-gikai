@@ -45,6 +45,23 @@ function monthOf(session: CouncilSession): number {
   return Number(session.start_date.slice(5, 7));
 }
 
+function resolveSlotMonth(
+  session: CouncilSession,
+  configuredMonths: readonly number[]
+): number {
+  const startMonth = monthOf(session);
+  if (configuredMonths.includes(startMonth)) return startMonth;
+
+  // 例: 6月定例会が5月末に開会する場合など、名称内の月が通常開催月に含まれればその枠へ寄せる
+  const nameMatch = session.name.match(/(\d{1,2})月/);
+  if (nameMatch) {
+    const namedMonth = Number(nameMatch[1]);
+    if (configuredMonths.includes(namedMonth)) return namedMonth;
+  }
+
+  return startMonth;
+}
+
 /**
  * 当年の定例会スロットを組み立てる。
  *
@@ -61,12 +78,17 @@ export function resolveSessionSlots(
 
   const byMonth = new Map<number, CouncilSession>();
   for (const session of sessions.filter(isRegularSession)) {
-    const month = monthOf(session);
+    const month = resolveSlotMonth(session, months);
     const existing = byMonth.get(month);
     if (!existing || session.start_date < existing.start_date) {
       byMonth.set(month, session);
     }
   }
+
+  // 通常開催月以外の定例会が登録されていても帯から黙って消えないようマージして昇順化する
+  const slotMonths = [...new Set([...months, ...byMonth.keys()])].sort(
+    (a, b) => a - b
+  );
 
   // 各会期について「次に開会する会期の開会日」を求めておく。
   // end_date が無い会期の打ち切り判定に使う
@@ -82,11 +104,17 @@ export function resolveSessionSlots(
     );
   }
 
+  // 期間が重なる会期があっても強調枠が常に1つになるよう、開催中のうち開始日が最も新しい1件だけを選ぶ
+  const activeCandidates = ordered.filter((session) =>
+    isInSession(session, now, nextStartById.get(session.id) ?? null)
+  );
+  const activeSessionId = activeCandidates.at(-1)?.id ?? null;
+
   const inSessionOf = (session: CouncilSession) =>
-    isInSession(session, now, nextStartById.get(session.id) ?? null);
+    activeSessionId !== null && session.id === activeSessionId;
 
   // 会期中の回があるか。あるなら「つぎはここ」は出さない（強調は常に1つ）
-  const hasInSession = ordered.some(inSessionOf);
+  const hasInSession = activeSessionId !== null;
 
   // 「つぎはここ」に当たる回（まだ開会していない回のうち最も早いもの）
   let nextMonth: number | null = null;
@@ -101,7 +129,7 @@ export function resolveSessionSlots(
     }
   }
 
-  return months.map((month) => {
+  return slotMonths.map((month) => {
     const session = byMonth.get(month) ?? null;
     return {
       month,

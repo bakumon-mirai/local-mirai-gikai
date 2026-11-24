@@ -90,5 +90,9 @@ describe("isNavItemActive", () => {
       false
     );
     expect(bills && isNavItemActive(bills, "/sessions/r8-09/bills")).toBe(true);
+    expect(bills && isNavItemActive(bills, "/bills/bill-1")).toBe(true);
+    expect(bills && isNavItemActive(bills, "/bills/bill-1/opinions")).toBe(
+      true
+    );
   });
 });
