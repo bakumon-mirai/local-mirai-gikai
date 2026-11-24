@@ -41,7 +41,8 @@ export function MeetingDetailView({ meeting }: Props) {
       .filter((order): order is number => order != null)
   );
   const safeSourceUrl = toSafeExternalUrl(meeting.sourceUrl);
-  const sourceHref = safeSourceUrl ?? toSafeExternalUrl(siteConfig.councilBaseUrl);
+  const sourceHref =
+    safeSourceUrl ?? toSafeExternalUrl(siteConfig.councilBaseUrl);
   const sourceLabel = safeSourceUrl
     ? `${siteConfig.councilName} 公式会議録を見る`
     : `${siteConfig.councilName} 公式サイトを見る`;
