@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { siteConfig } from "@/config/site.config";
 import { getBillById } from "@/features/bills/server/loaders/get-bill-by-id";
 import { PublicOpinionsPage } from "@/features/interview-report/server/components/public-opinions-page";
 
@@ -11,6 +13,10 @@ interface OpinionsPageProps {
 export async function generateMetadata({
   params,
 }: OpinionsPageProps): Promise<Metadata> {
+  if (!siteConfig.features.bills) {
+    return { title: "ページが見つかりません" };
+  }
+
   const { id } = await params;
   const bill = await getBillById(id);
   const title = bill?.bill_content?.title || bill?.name || "議案";
@@ -22,6 +28,10 @@ export async function generateMetadata({
 }
 
 export default async function OpinionsPage({ params }: OpinionsPageProps) {
+  if (!siteConfig.features.bills) {
+    notFound();
+  }
+
   const { id } = await params;
   return <PublicOpinionsPage billId={id} />;
 }

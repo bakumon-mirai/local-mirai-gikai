@@ -1,7 +1,9 @@
+import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import { unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import type { CouncilSession } from "../../shared/types";
+import { parseSessionMilestones } from "../../shared/utils/parse-session-milestones";
 
 /**
  * slugで定例会を取得
@@ -27,9 +29,13 @@ const _getCachedCouncilSessionBySlug = unstable_cache(
       return null;
     }
 
-    return data;
+    if (!data) return null;
+    return {
+      ...data,
+      schedule_milestones: parseSessionMilestones(data.schedule_milestones),
+    };
   },
-  ["council-session-by-slug"],
+  ["council-session-by-slug-v2"],
   {
     revalidate: 3600, // 1時間
     tags: [CACHE_TAGS.COUNCIL_SESSIONS],

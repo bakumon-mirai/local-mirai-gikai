@@ -38,7 +38,32 @@ export const routes = {
   reportChatLog: (reportId: string) => `/report/${reportId}/chat-log` as const,
 
   // ── 定例会セッション ────────────────────────────────
+  sessions: () => "/sessions" as const,
   sessionBills: (slug: string) => `/sessions/${slug}/bills` as const,
+  sessionQuestions: (slug: string) => `/sessions/${slug}/questions` as const,
+
+  // ── 一般質問・代表質問 ──────────────────────────────
+  questions: () => "/questions" as const,
+  questionDetail: (id: string) => `/questions/${id}` as const,
+
+  // ── 委員会議事録 ────────────────────────────────────
+  committees: () => "/committees" as const,
+  committeeDetail: (slug: string) => `/committees/${slug}` as const,
+  committeeMeeting: (slug: string, meetingId: string) =>
+    `/committees/${slug}/${meetingId}` as const,
+  committeeMeetingTranscript: (slug: string, meetingId: string) =>
+    `/committees/${slug}/${meetingId}/transcript` as const,
+
+  // ── 首長記者会見 ────────────────────────────────────
+  pressConferences: () => "/press-conferences" as const,
+  pressConferenceDetail: (slug: string) =>
+    `/press-conferences/${slug}` as const,
+
+  // ── 検索 ────────────────────────────────────────────
+  search: (query?: string) =>
+    query
+      ? (`/search?q=${encodeURIComponent(query)}` as const)
+      : ("/search" as const),
 
   // ── その他 ────────────────────────────────────────
   faq: () => "/faq" as const,
