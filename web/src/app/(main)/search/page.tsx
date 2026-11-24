@@ -29,7 +29,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const isArchiveLayout = siteConfig.homeLayout === "archive";
 
   return (
-    <Container className="py-8">
+    <Container className={isArchiveLayout ? "py-8" : "py-10"}>
       {isArchiveLayout && (
         <div className="mb-4">
           <Link
@@ -41,7 +41,13 @@ export default async function SearchPage({ searchParams }: Props) {
           </Link>
         </div>
       )}
-      <h1 className="font-rounded text-2xl font-bold text-mirai-text pc:text-3xl mb-6">
+      <h1
+        className={
+          isArchiveLayout
+            ? "font-rounded text-2xl font-bold text-mirai-text pc:text-3xl mb-6"
+            : "text-2xl font-bold text-mirai-text mb-6"
+        }
+      >
         検索
       </h1>
       <Suspense>
