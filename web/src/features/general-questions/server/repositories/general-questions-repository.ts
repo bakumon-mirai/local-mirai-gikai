@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import type { GeneralQuestion } from "../../shared/types";
+import { parseGeneralQuestionTopics } from "../../shared/utils/parse-topics";
 
 const QUESTIONER_PAGE_SIZE = 500;
 const QUESTIONER_MAX_PAGES = 20;
@@ -80,7 +81,7 @@ export async function findPublishedGeneralQuestionsBySession(
 
   return (data ?? []).map((row) => ({
     ...row,
-    topics: Array.isArray(row.topics) ? row.topics : [],
+    topics: parseGeneralQuestionTopics(row.topics),
   })) as GeneralQuestion[];
 }
 
@@ -144,6 +145,6 @@ export async function findPublishedGeneralQuestionById(
 
   return {
     ...data,
-    topics: Array.isArray(data.topics) ? data.topics : [],
+    topics: parseGeneralQuestionTopics(data.topics),
   } as GeneralQuestion;
 }
