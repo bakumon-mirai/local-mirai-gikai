@@ -95,6 +95,18 @@ function rangeStatus(range: DateRange, now: number): SessionStep["status"] {
   return "upcoming";
 }
 
+function singleDayStatus(
+  targetDate: string,
+  now: number
+): SessionStep["status"] {
+  const target = toUtcMs(targetDate);
+  if (target === null) return "upcoming";
+
+  if (now > target) return "done";
+  if (now === target) return "current";
+  return "upcoming";
+}
+
 export function buildSessionSteps(
   startDate: string,
   endDate: string | null,
@@ -137,11 +149,10 @@ export function buildSessionSteps(
   const voteIsClosingDay = voteDate !== null && voteDate === endDate;
 
   if (voteDate && !voteIsClosingDay) {
-    const vote = toUtcMs(voteDate);
     steps.push({
       date: formatStepDate(voteDate),
       label: "議案の採決",
-      status: vote !== null && now >= vote ? "done" : "upcoming",
+      status: singleDayStatus(voteDate, now),
     });
   }
 
@@ -151,7 +162,7 @@ export function buildSessionSteps(
       steps.push({
         date: formatStepDate(endDate),
         label: voteIsClosingDay ? "議案の採決・閉会" : "閉会",
-        status: now >= end ? "done" : "upcoming",
+        status: singleDayStatus(endDate, now),
       });
     }
   }

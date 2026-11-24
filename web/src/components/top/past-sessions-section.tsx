@@ -21,7 +21,9 @@ export function PastSessionsSection({
 }: PastSessionsSectionProps) {
   if (!showBills && !showGeneralQuestions) return null;
 
-  const visibleSessions = sessions.slice(0, MAX_VISIBLE_SESSIONS);
+  const visibleSessions = sessions
+    .filter((session) => Boolean(session.slug))
+    .slice(0, MAX_VISIBLE_SESSIONS);
   const subtitle =
     showBills && showGeneralQuestions
       ? "過去に開催された定例会の議案や一般質問をご覧いただけます"

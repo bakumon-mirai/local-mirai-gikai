@@ -22,19 +22,55 @@ import { getJapanTime } from "@/lib/utils/date";
 
 export const dynamic = "force-dynamic";
 
+function buildHomeChatBills(
+  billsByTag: Array<{ bills: BillWithContent[] }>,
+  featuredBills: BillWithContent[]
+) {
+  const featuredIds = new Set(featuredBills.map((b) => b.id));
+  const seen = new Set<string>();
+  const merged: BillWithContent[] = [];
+
+  for (const bill of [
+    ...billsByTag.flatMap((x) => x.bills),
+    ...featuredBills,
+  ]) {
+    if (seen.has(bill.id)) continue;
+    seen.add(bill.id);
+    merged.push(bill);
+  }
+
+  return merged.map((bill) => ({
+    name: `${bill.bill_content?.title}（${bill.name}）`,
+    summary: bill.bill_content?.summary,
+    tags: bill.tags?.map((tag) => tag.label) || [],
+    isFeatured: featuredIds.has(bill.id),
+  }));
+}
+
 async function ArchiveHome() {
-  const [heroData, sectionsData, pastSessions, pressConferences, difficulty] =
-    await Promise.all([
-      loadTopHeroData(),
-      loadTopSectionsData(),
-      getAllPastSessions(),
-      siteConfig.features.pressConferences
-        ? getPressConferences()
-        : Promise.resolve([]),
-      siteConfig.features.aiChat
-        ? getDifficultyLevel()
-        : Promise.resolve("normal" as const),
-    ]);
+  const [
+    heroData,
+    sectionsData,
+    pastSessions,
+    pressConferences,
+    difficulty,
+    chatBills,
+  ] = await Promise.all([
+    loadTopHeroData(),
+    loadTopSectionsData(),
+    getAllPastSessions(),
+    siteConfig.features.pressConferences
+      ? getPressConferences()
+      : Promise.resolve([]),
+    siteConfig.features.aiChat
+      ? getDifficultyLevel()
+      : Promise.resolve("normal" as const),
+    siteConfig.features.aiChat && siteConfig.features.bills
+      ? loadHomeData().then(({ billsByTag, featuredBills }) =>
+          buildHomeChatBills(billsByTag, featuredBills)
+        )
+      : Promise.resolve([]),
+  ]);
 
   return (
     <>
@@ -63,7 +99,7 @@ async function ArchiveHome() {
       </Container>
 
       {siteConfig.features.aiChat && (
-        <HomeChatClient currentDifficulty={difficulty} bills={[]} />
+        <HomeChatClient currentDifficulty={difficulty} bills={chatBills} />
       )}
     </>
   );
@@ -79,15 +115,7 @@ async function BillsHome() {
   ]);
 
   const featuredBillIds = new Set(featuredBills.map((b) => b.id));
-
-  const toBillChatContext = (bill: BillWithContent) => {
-    return {
-      name: `${bill.bill_content?.title}（${bill.name}）`,
-      summary: bill.bill_content?.summary,
-      tags: bill.tags?.map((tag) => tag.label) || [],
-      isFeatured: featuredBills.some((b) => b.id === bill.id),
-    };
-  };
+  const chatBills = buildHomeChatBills(billsByTag, featuredBills);
 
   return (
     <>
@@ -130,10 +158,7 @@ async function BillsHome() {
       {siteConfig.features.aiChat && (
         <HomeChatClient
           currentDifficulty={currentDifficulty}
-          bills={billsByTag
-            .flatMap((x) => x.bills)
-            .concat(featuredBills)
-            .map(toBillChatContext)}
+          bills={chatBills}
         />
       )}
     </>

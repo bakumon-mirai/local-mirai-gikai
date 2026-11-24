@@ -118,6 +118,6 @@ async function resolveBillSummary(today: string): Promise<{
       await findBillStatusesBySession(latestWithBills.id)
     ),
     sessionSlug: latestWithBills.slug,
-    isInSession: false,
+    isInSession: current !== null && latestWithBills.id === current.id,
   };
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, Copy, Monitor, Smartphone } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DesktopNav } from "@/components/layouts/navigation/desktop-nav";
 import { buildMobileNavItems } from "@/components/layouts/navigation/nav-items";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,86 @@ const FEATURE_LABELS: Array<{
   { key: "search", label: "横断検索・テーマ", hint: "キーワード・8テーマ検索" },
   { key: "aiChat", label: "AIチャット", hint: "LLM APIキー設定時" },
 ];
+
+function PreviewViewportFrame({
+  viewport,
+  children,
+}: {
+  viewport: ViewportOption;
+  children: ReactNode;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
+  const [height, setHeight] = useState(900);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const setupDocument = () => {
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+
+      doc.documentElement.lang = document.documentElement.lang || "ja";
+      doc.documentElement.className = document.documentElement.className;
+      doc.body.className = document.body.className;
+      doc.body.style.margin = "0";
+      doc.body.style.overflowX = "hidden";
+
+      doc.head.replaceChildren();
+      for (const node of document.querySelectorAll(
+        'link[rel="stylesheet"], style'
+      )) {
+        doc.head.appendChild(node.cloneNode(true));
+      }
+
+      let root = doc.getElementById("preview-root");
+      if (!root) {
+        root = doc.createElement("div");
+        root.id = "preview-root";
+        doc.body.replaceChildren(root);
+      }
+      setMountNode(root);
+    };
+
+    if (iframe.contentDocument?.readyState === "complete") {
+      setupDocument();
+    } else {
+      iframe.addEventListener("load", setupDocument, { once: true });
+      return () => iframe.removeEventListener("load", setupDocument);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mountNode) return;
+
+    const updateHeight = () => {
+      const nextHeight = Math.max(mountNode.scrollHeight, 400);
+      setHeight(nextHeight);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(mountNode);
+    return () => observer.disconnect();
+  }, [mountNode]);
+
+  return (
+    <>
+      <iframe
+        ref={iframeRef}
+        title="トップページプレビュー"
+        srcDoc="<!doctype html><html><head></head><body></body></html>"
+        style={{ height: `${height}px` }}
+        className={cn(
+          "w-full rounded-2xl border border-mirai-border bg-mirai-surface shadow-sm transition-all",
+          viewport === "mobile" ? "max-w-[390px]" : "max-w-full"
+        )}
+      />
+      {mountNode ? createPortal(children, mountNode) : null}
+    </>
+  );
+}
 
 export function TopPreviewClient() {
   const [homeLayout, setHomeLayout] = useState<HomeLayoutOption>("archive");
@@ -341,135 +422,140 @@ features: {
         </div>
       </div>
 
-      {/* プレビュー領域 */}
+      {/* プレビュー領域（iframe で独立ビューポートを作り PC / スマホ幅のメディアクエリを正確に反映） */}
       <div className="flex justify-center">
-        <div
-          className={cn(
-            "w-full rounded-2xl border border-mirai-border bg-mirai-surface overflow-hidden shadow-sm transition-all",
-            viewport === "mobile" ? "max-w-[390px]" : "max-w-full"
-          )}
-        >
-          {/* 疑似ヘッダー */}
-          <div className="bg-white border-b border-mirai-border px-4 py-3 flex items-center justify-between gap-3">
-            <span className="font-bold text-sm text-mirai-text whitespace-nowrap">
-              みらい議会＠{municipality.cityName}
-            </span>
-            {homeLayout === "archive" && viewport === "desktop" && (
-              <DesktopNav
-                features={features}
-                executiveTitle={municipality.executiveTitle}
-              />
+        <PreviewViewportFrame viewport={viewport}>
+          <div className="w-full bg-mirai-surface">
+            {/* 疑似ヘッダー */}
+            <div className="bg-white border-b border-mirai-border px-4 py-3 flex items-center justify-between gap-3">
+              <span className="font-bold text-sm text-mirai-text whitespace-nowrap">
+                みらい議会＠{municipality.cityName}
+              </span>
+              {homeLayout === "archive" && viewport === "desktop" && (
+                <DesktopNav
+                  features={features}
+                  executiveTitle={municipality.executiveTitle}
+                />
+              )}
+              <span className="text-xs text-mirai-text-muted">
+                {features.search ? "検索あり" : "検索なし"}
+              </span>
+            </div>
+
+            {/* 本体 */}
+            {homeLayout === "archive" ? (
+              <div className="py-4">
+                <ArchiveHomeView
+                  currentSession={currentSession}
+                  nextSession={nextSession}
+                  latestConference={SAMPLE_LATEST_CONFERENCE}
+                  recentConferences={SAMPLE_RECENT_CONFERENCES}
+                  inSessionCounts={
+                    sessionState === "in_session"
+                      ? { deliberatingBills: 4, questioners: 12 }
+                      : null
+                  }
+                  today={today}
+                  sessionSlots={sessionSlots}
+                  committeeMeetings={SAMPLE_COMMITTEES}
+                  questions={SAMPLE_QUESTIONS}
+                  questionSessionName="令和8年 6月定例会"
+                  billSummary={
+                    sessionState === "in_session"
+                      ? SAMPLE_BILL_SUMMARY_IN_SESSION
+                      : SAMPLE_BILL_SUMMARY_CLOSED
+                  }
+                  billsSessionSlug={
+                    sessionState === "in_session" ? "r8-09" : "r8-06"
+                  }
+                  isBillSessionInSession={sessionState === "in_session"}
+                  pastSessions={sessions}
+                  pressConferences={SAMPLE_PRESS_CONFERENCES}
+                  cityName={municipality.cityName}
+                  councilName={municipality.councilName}
+                  executiveTitle={municipality.executiveTitle}
+                  governmentTerm={municipality.governmentTerm}
+                  features={features}
+                />
+              </div>
+            ) : (
+              <div className="p-6 flex flex-col gap-6">
+                <div className="rounded-2xl bg-mirai-gradient p-8 text-mirai-text">
+                  <p className="text-xs font-medium text-primary-accent">
+                    議案中心レイアウト（homeLayout: &quot;bills&quot;）
+                  </p>
+                  <p className="mt-2 text-xl font-bold leading-relaxed">
+                    いま{municipality.councilName}で議論されていること
+                    <br />
+                    やさしい言葉で説明します
+                  </p>
+                </div>
+
+                {features.bills ? (
+                  <div className="rounded-2xl bg-white p-5 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h2 className="font-bold text-mirai-text">注目の議案</h2>
+                      <span className="rounded-full bg-mirai-surface-grouped px-2.5 py-1 text-xs text-mirai-text-secondary">
+                        会派別賛否:{" "}
+                        {features.showFactionStances
+                          ? "表示する"
+                          : "非表示（可否のみ）"}
+                      </span>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-xl border border-mirai-border p-4">
+                        <span className="text-xs text-primary-accent font-medium">
+                          子育て・教育
+                        </span>
+                        <p className="mt-1 font-bold text-sm text-mirai-text">
+                          学校給食費の無償化に関する条例の一部改正
+                        </p>
+                        <p className="mt-1 text-xs text-mirai-text-secondary">
+                          対象学年を拡大し、保護者の負担を軽減します。
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-mirai-border p-4">
+                        <span className="text-xs text-primary-accent font-medium">
+                          防災・安全
+                        </span>
+                        <p className="mt-1 font-bold text-sm text-mirai-text">
+                          令和8年度 一般会計補正予算（第2号）
+                        </p>
+                        <p className="mt-1 text-xs text-mirai-text-secondary">
+                          避難所の空調設備と非常用電源の整備費を計上します。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-mirai-border bg-white/60 p-5 text-xs text-mirai-text-secondary">
+                    「議案一覧・詳細（features.bills）」が OFF
+                    のため、議案パーツは非表示になります。議案を出さない自治体では
+                    homeLayout: &quot;archive&quot; をおすすめします。
+                  </div>
+                )}
+              </div>
             )}
-            <span className="text-xs text-mirai-text-muted">
-              {features.search ? "検索あり" : "検索なし"}
-            </span>
-          </div>
 
-          {/* 本体 */}
-          {homeLayout === "archive" ? (
-            <div className="py-4">
-              <ArchiveHomeView
-                currentSession={currentSession}
-                nextSession={nextSession}
-                latestConference={SAMPLE_LATEST_CONFERENCE}
-                recentConferences={SAMPLE_RECENT_CONFERENCES}
-                inSessionCounts={
-                  sessionState === "in_session"
-                    ? { deliberatingBills: 4, questioners: 12 }
-                    : null
-                }
-                today={today}
-                sessionSlots={sessionSlots}
-                committeeMeetings={SAMPLE_COMMITTEES}
-                questions={SAMPLE_QUESTIONS}
-                questionSessionName="令和8年 6月定例会"
-                billSummary={
-                  sessionState === "in_session"
-                    ? SAMPLE_BILL_SUMMARY_IN_SESSION
-                    : SAMPLE_BILL_SUMMARY_CLOSED
-                }
-                billsSessionSlug={
-                  sessionState === "in_session" ? "r8-09" : "r8-06"
-                }
-                isBillSessionInSession={sessionState === "in_session"}
-                pastSessions={sessions}
-                pressConferences={SAMPLE_PRESS_CONFERENCES}
-                cityName={municipality.cityName}
-                councilName={municipality.councilName}
-                executiveTitle={municipality.executiveTitle}
-                governmentTerm={municipality.governmentTerm}
-                features={features}
-              />
-            </div>
-          ) : (
-            <div className="p-6 flex flex-col gap-6">
-              <div className="rounded-2xl bg-mirai-gradient p-8 text-mirai-text">
-                <p className="text-xs font-medium text-primary-accent">
-                  議案中心レイアウト（homeLayout: &quot;bills&quot;）
-                </p>
-                <p className="mt-2 text-xl font-bold leading-relaxed">
-                  いま{municipality.councilName}で議論されていること
-                  <br />
-                  やさしい言葉で説明します
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-white p-5 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-bold text-mirai-text">注目の議案</h2>
-                  <span className="rounded-full bg-mirai-surface-grouped px-2.5 py-1 text-xs text-mirai-text-secondary">
-                    会派別賛否:{" "}
-                    {features.showFactionStances
-                      ? "表示する"
-                      : "非表示（可否のみ）"}
+            {/* スマホボトムナビのイメージ */}
+            {homeLayout === "archive" && mobileNavItems.length > 1 && (
+              <div className="border-t border-archive-divider bg-white px-3 py-2 flex items-center justify-around text-xs text-mirai-text-secondary">
+                {mobileNavItems.map((item, idx) => (
+                  <span
+                    key={item.href}
+                    className={cn(
+                      "px-2.5 py-1 rounded-full",
+                      idx === 0 &&
+                        "bg-archive-pill-bg text-archive-pill-text font-medium"
+                    )}
+                  >
+                    {item.label}
                   </span>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-xl border border-mirai-border p-4">
-                    <span className="text-xs text-primary-accent font-medium">
-                      子育て・教育
-                    </span>
-                    <p className="mt-1 font-bold text-sm text-mirai-text">
-                      学校給食費の無償化に関する条例の一部改正
-                    </p>
-                    <p className="mt-1 text-xs text-mirai-text-secondary">
-                      対象学年を拡大し、保護者の負担を軽減します。
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-mirai-border p-4">
-                    <span className="text-xs text-primary-accent font-medium">
-                      防災・安全
-                    </span>
-                    <p className="mt-1 font-bold text-sm text-mirai-text">
-                      令和8年度 一般会計補正予算（第2号）
-                    </p>
-                    <p className="mt-1 text-xs text-mirai-text-secondary">
-                      避難所の空調設備と非常用電源の整備費を計上します。
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
-          )}
-
-          {/* スマホボトムナビのイメージ */}
-          {homeLayout === "archive" && mobileNavItems.length > 1 && (
-            <div className="border-t border-archive-divider bg-white px-3 py-2 flex items-center justify-around text-xs text-mirai-text-secondary">
-              {mobileNavItems.map((item, idx) => (
-                <span
-                  key={item.href}
-                  className={cn(
-                    "px-2.5 py-1 rounded-full",
-                    idx === 0 &&
-                      "bg-archive-pill-bg text-archive-pill-text font-medium"
-                  )}
-                >
-                  {item.label}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </PreviewViewportFrame>
       </div>
 
       {/* siteConfig スニペット出力 */}

@@ -5,6 +5,7 @@ import { siteConfig } from "@/config/site.config";
 import type { CouncilSession, PastCouncilSession } from "../../shared/types";
 import { mergePastCouncilSessions } from "../../shared/utils/merge-past-sessions";
 import { parseSessionMilestones } from "../../shared/utils/parse-session-milestones";
+import { selectCurrentCouncilSession } from "../../shared/utils/select-current-session";
 
 type CouncilSessionRow = Omit<CouncilSession, "schedule_milestones"> & {
   schedule_milestones: unknown;
@@ -60,17 +61,15 @@ export async function findCurrentCouncilSession(
     .from("council_sessions")
     .select("*")
     .lte("start_date", targetDate)
-    .or(`end_date.gte.${targetDate},end_date.is.null`)
     .order("start_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(5);
 
   if (error) {
     console.error("Failed to fetch current council session:", error);
     return null;
   }
 
-  return toCouncilSession(data);
+  return selectCurrentCouncilSession(toCouncilSessions(data ?? []), targetDate);
 }
 
 /**

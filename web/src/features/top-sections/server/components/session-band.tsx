@@ -111,12 +111,7 @@ function SlotLink({
         : null;
     if (!href) return null;
 
-    const label =
-      showBills && showGeneralQuestions
-        ? "議案・一般質問を見る"
-        : showBills
-          ? "議案を見る"
-          : "一般質問を見る";
+    const label = showBills ? "議案を見る" : "一般質問を見る";
 
     return (
       <Link
