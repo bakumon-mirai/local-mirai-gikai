@@ -8,7 +8,7 @@ import type { SessionSlot } from "@/features/council-sessions/shared/utils/resol
 import type { GeneralQuestion } from "@/features/general-questions/shared/types";
 import { PressConferenceArchiveSection } from "@/features/press-conferences/client/components/press-conference-archive-section";
 import type {
-  PressConference,
+  PressConferenceListItem,
   PressConferenceRef,
   PressConferenceSummary,
 } from "@/features/press-conferences/shared/types";
@@ -43,7 +43,7 @@ export type ArchiveHomeViewProps = {
   billsSessionSlug: string | null;
   isBillSessionInSession: boolean;
   pastSessions: CouncilSession[];
-  pressConferences: PressConference[];
+  pressConferences: PressConferenceListItem[];
   cityName?: string;
   councilName?: string;
   executiveTitle?: string;

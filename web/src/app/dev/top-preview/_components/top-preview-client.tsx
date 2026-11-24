@@ -158,17 +158,18 @@ export function TopPreviewClient() {
   const configSnippet = useMemo(() => {
     return `homeLayout: "${homeLayout}" as "bills" | "archive",
 executiveTitle: "${municipality.executiveTitle}",
+executiveName: "" as string,
 governmentTerm: "${municipality.governmentTerm}",
 regularSessionMonths: [${municipality.regularSessionMonths.join(", ")}] as readonly number[],
 features: {
-  bills: ${features.bills},
-  showFactionStances: ${features.showFactionStances},
-  generalQuestions: ${features.generalQuestions},
-  committeeMinutes: ${features.committeeMinutes},
-  pressConferences: ${features.pressConferences},
-  search: ${features.search},
-  aiChat: ${features.aiChat},
-  aiInterview: false,
+  bills: ${features.bills} as boolean,
+  showFactionStances: ${features.showFactionStances} as boolean,
+  generalQuestions: ${features.generalQuestions} as boolean,
+  committeeMinutes: ${features.committeeMinutes} as boolean,
+  pressConferences: ${features.pressConferences} as boolean,
+  search: ${features.search} as boolean,
+  aiChat: ${features.aiChat} as boolean,
+  aiInterview: false as boolean,
   showTeamMiraiSection: false as boolean,
 },`;
   }, [homeLayout, municipality, features]);

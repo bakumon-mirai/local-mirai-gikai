@@ -3,7 +3,7 @@ import type { CommitteeMeetingSummary } from "@/features/committee-minutes/share
 import type { CouncilSession } from "@/features/council-sessions/shared/types";
 import type { GeneralQuestion } from "@/features/general-questions/shared/types";
 import type {
-  PressConference,
+  PressConferenceListItem,
   PressConferenceRef,
   PressConferenceSummary,
 } from "@/features/press-conferences/shared/types";
@@ -133,26 +133,17 @@ export const SAMPLE_RECENT_CONFERENCES: PressConferenceRef[] = [
   { id: "pc-4", slug: "2026-07-08", heldAt: "2026-07-08" },
 ];
 
-export const SAMPLE_PRESS_CONFERENCES: PressConference[] = [
+export const SAMPLE_PRESS_CONFERENCES: PressConferenceListItem[] = [
   {
     id: "pc-1",
     slug: "2026-08-25",
     title: "定例記者会見（8月25日）",
     heldAt: "2026-08-25",
-    youtubeUrl: null,
-    status: "published",
-    items: [
-      {
-        id: "t1",
-        itemType: "announcement",
-        orderIndex: 1,
-        title: "新年度の子育て世帯向け給食費支援について",
-        summary: "小中学校の給食費補助を拡充する方針を説明しました。",
-        detail: null,
-        materialUrl: null,
-        turns: [],
-      },
+    announcementTitles: [
+      "新年度の子育て世帯向け給食費支援について",
+      "秋の防災訓練と避難所備蓄の見直しについて",
     ],
+    qaCount: 3,
   },
 ];
 
@@ -241,8 +232,6 @@ export const SAMPLE_QUESTIONS: GeneralQuestion[] = [
         answerer_name: "佐藤 花子",
       },
     ],
-    raw_text: null,
-    answer_raw_text: null,
     source_url: null,
     publish_status: "published",
     created_at: "2026-06-20T00:00:00Z",
@@ -268,8 +257,6 @@ export const SAMPLE_QUESTIONS: GeneralQuestion[] = [
         answerer_name: "高橋 健",
       },
     ],
-    raw_text: null,
-    answer_raw_text: null,
     source_url: null,
     publish_status: "published",
     created_at: "2026-06-20T00:00:00Z",
@@ -295,8 +282,6 @@ export const SAMPLE_QUESTIONS: GeneralQuestion[] = [
         answerer_name: "伊藤 誠",
       },
     ],
-    raw_text: null,
-    answer_raw_text: null,
     source_url: null,
     publish_status: "published",
     created_at: "2026-06-21T00:00:00Z",
