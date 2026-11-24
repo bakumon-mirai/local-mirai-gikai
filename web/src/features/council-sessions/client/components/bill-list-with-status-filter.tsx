@@ -186,10 +186,14 @@ export function BillListWithStatusFilter({
       ) : (
         <>
           {filteredBills.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="grid gap-3 pc:grid-cols-2">
               {filteredBills.map((bill) => (
-                <Link key={bill.id} href={`/bills/${bill.id}`}>
-                  <CompactBillCard bill={bill} />
+                <Link
+                  key={bill.id}
+                  href={`/bills/${bill.id}`}
+                  className="block"
+                >
+                  <CompactBillCard bill={bill} className="h-full" />
                 </Link>
               ))}
             </div>
@@ -206,9 +210,9 @@ export function BillListWithStatusFilter({
                   順次掲載されていきます
                 </p>
               </div>
-              <div className="flex flex-col gap-3">
+              <div className="grid gap-3 pc:grid-cols-2">
                 {filteredComingSoon.map((bill) => (
-                  <Card key={bill.id} className="border border-black">
+                  <Card key={bill.id} className="border border-black h-full">
                     <CardContent className="flex items-center justify-between py-4 px-5">
                       <div className="flex flex-col gap-1 min-w-0">
                         <h4 className="font-bold text-base text-black leading-tight">

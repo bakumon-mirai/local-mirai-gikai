@@ -28,13 +28,13 @@ const TAB_LABELS: Record<SearchTab, string> = {
   committees: "委員会",
 };
 
-const SECTION_LIMIT = 3;
+const SECTION_LIMIT = 4;
 
 function BillCard({ bill }: { bill: BillSearchResult }) {
   return (
     <Link
       href={routes.billDetail(bill.id)}
-      className="block border border-mirai-border rounded-lg p-4 bg-white hover:bg-mirai-surface transition-colors"
+      className="flex h-full flex-col border border-mirai-border rounded-xl p-4 bg-white hover:bg-archive-surface-tint transition-colors"
     >
       <div className="flex items-center gap-2 mb-1">
         <FileText className="size-4 text-mirai-text-muted shrink-0" />
@@ -65,7 +65,7 @@ function QuestionCard({ question }: { question: QuestionSearchResult }) {
   return (
     <Link
       href={routes.questionDetail(question.id)}
-      className="block border border-mirai-border rounded-lg p-4 bg-white hover:bg-mirai-surface transition-colors"
+      className="flex h-full flex-col border border-mirai-border rounded-xl p-4 bg-white hover:bg-archive-surface-tint transition-colors"
     >
       <div className="flex items-center gap-2 mb-1">
         <MessageSquare className="size-4 text-mirai-text-muted shrink-0" />
@@ -97,7 +97,7 @@ function CommitteeCard({ committee }: { committee: CommitteeSearchResult }) {
   return (
     <Link
       href={routes.committeeMeeting(committee.committeeSlug, committee.id)}
-      className="block border border-mirai-border rounded-lg p-4 bg-white hover:bg-mirai-surface transition-colors"
+      className="flex h-full flex-col border border-mirai-border rounded-xl p-4 bg-white hover:bg-archive-surface-tint transition-colors"
     >
       <div className="flex items-center gap-2 mb-1">
         <Users className="size-4 text-mirai-text-muted shrink-0" />
@@ -147,7 +147,7 @@ function ResultSection<T>({
           {items.length}件
         </span>
       </h2>
-      <div className="flex flex-col gap-3">
+      <div className="grid gap-3 pc:grid-cols-2">
         {visible.map((item, i) => renderCard(item, i))}
       </div>
       {remaining > 0 && !expanded && (
