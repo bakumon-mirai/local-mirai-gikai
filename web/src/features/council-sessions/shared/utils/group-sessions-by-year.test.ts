@@ -62,4 +62,12 @@ describe("formatSessionPeriod", () => {
     const session = makeSession({ start_date: "2025-09-01", end_date: null });
     expect(formatSessionPeriod(session)).toBe("2025.9");
   });
+
+  it("年を跨ぐ場合 'YYYY.M〜YYYY.M' を返す", () => {
+    const session = makeSession({
+      start_date: "2025-12-20",
+      end_date: "2026-01-15",
+    });
+    expect(formatSessionPeriod(session)).toBe("2025.12〜2026.1");
+  });
 });

@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import type {
   PressConference,
+  PressConferenceListItem,
   PressConferenceRef,
   PressConferenceSummary,
 } from "../../shared/types";
@@ -34,6 +35,10 @@ type PressConferenceRow = {
   status: string;
   press_conference_items: ItemRow[];
 };
+
+function isMissingTableError(error: { code?: string | null }): boolean {
+  return error.code === "42P01" || error.code === "PGRST205";
+}
 
 function mapToPressConference(row: PressConferenceRow): PressConference {
   return {
@@ -74,23 +79,64 @@ const NESTED_SELECT = `
   )
 ` as const;
 
-export async function findPublishedPressConferences(): Promise<
-  PressConference[]
+const LIST_SELECT = `
+  id,
+  slug,
+  title,
+  held_at,
+  press_conference_items (
+    id,
+    item_type,
+    order_index,
+    title
+  )
+` as const;
+
+/**
+ * 一覧表示に必要な最小項目のみ取得する（detail・turns 本文は取得しない）。
+ */
+export async function findPublishedPressConferenceList(): Promise<
+  PressConferenceListItem[]
 > {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("press_conferences")
-    .select(NESTED_SELECT)
+    .select(LIST_SELECT)
     .eq("status", "published")
     .order("held_at", { ascending: false });
 
   if (error) {
+    if (isMissingTableError(error)) return [];
     throw new Error(`Failed to fetch press conferences: ${error.message}`);
   }
 
-  return (data ?? []).map((row) =>
-    mapToPressConference(row as unknown as PressConferenceRow)
-  );
+  return (data ?? []).map((raw) => {
+    const row = raw as unknown as {
+      id: string;
+      slug: string;
+      title: string;
+      held_at: string;
+      press_conference_items: Array<{
+        id: string;
+        item_type: string;
+        order_index: number;
+        title: string;
+      }>;
+    };
+    const items = [...(row.press_conference_items ?? [])].sort(
+      (a, b) => a.order_index - b.order_index
+    );
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      heldAt: row.held_at,
+      announcementTitles: items
+        .filter((item) => item.item_type === "announcement")
+        .map((item) => item.title),
+      qaCount: items.filter((item) => item.item_type === "qa").length,
+    };
+  });
 }
 
 export async function findPublishedPressConferenceBySlug(
@@ -105,6 +151,7 @@ export async function findPublishedPressConferenceBySlug(
     .maybeSingle();
 
   if (error) {
+    if (isMissingTableError(error)) return null;
     throw new Error(
       `Failed to fetch press conference by slug: ${error.message}`
     );
@@ -126,6 +173,7 @@ export async function findLatestPublishedPressConference(): Promise<PressConfere
     .maybeSingle();
 
   if (error) {
+    if (isMissingTableError(error)) return null;
     throw new Error(
       `Failed to fetch latest press conference: ${error.message}`
     );
@@ -137,19 +185,7 @@ export async function findLatestPublishedPressConference(): Promise<PressConfere
 }
 
 /**
- * 直近の会見を、日付チップに必要な項目だけで取得する（設計書 5.4 節）。
- *
- * `findPublishedPressConferences()` は全会見の発表・質疑・発言本文まで
- * ネストで引くため、日付を数件並べる用途には過剰。こちらを使う。
- *
- * @param limit 取得件数（開催日の新しい順）
- */
-/**
- * 最新の会見を、トップのカードに必要な項目だけで取得する（設計書 5.4 節）。
- *
- * `findLatestPublishedPressConference()` は press_conference_turns
- * （全発言本文）までネストで引くが、カードに出すのは話題のタイトルだけ。
- * トップの初期表示に全発言を載せる必要はないため、こちらを使う。
+ * 最新の会見を、トップのカードに必要な項目だけで取得する。
  */
 export async function findLatestPressConferenceSummary(): Promise<PressConferenceSummary | null> {
   const supabase = createAdminClient();
@@ -164,6 +200,7 @@ export async function findLatestPressConferenceSummary(): Promise<PressConferenc
     .maybeSingle();
 
   if (error) {
+    if (isMissingTableError(error)) return null;
     throw new Error(
       `Failed to fetch latest press conference summary: ${error.message}`
     );
@@ -191,6 +228,9 @@ export async function findLatestPressConferenceSummary(): Promise<PressConferenc
   };
 }
 
+/**
+ * 直近の会見を、日付チップに必要な項目だけで取得する。
+ */
 export async function findRecentPressConferenceRefs(
   limit: number
 ): Promise<PressConferenceRef[]> {
@@ -205,6 +245,7 @@ export async function findRecentPressConferenceRefs(
     .limit(limit);
 
   if (error) {
+    if (isMissingTableError(error)) return [];
     throw new Error(
       `Failed to fetch recent press conferences: ${error.message}`
     );

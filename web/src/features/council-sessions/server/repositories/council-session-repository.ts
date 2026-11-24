@@ -2,7 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@mirai-gikai/supabase";
 import { siteConfig } from "@/config/site.config";
-import type { CouncilSession } from "../../shared/types";
+import type { CouncilSession, PastCouncilSession } from "../../shared/types";
 import { parseSessionMilestones } from "../../shared/utils/parse-session-milestones";
 
 type CouncilSessionRow = Omit<CouncilSession, "schedule_milestones"> & {
@@ -94,11 +94,14 @@ export async function findAllCouncilSessions(): Promise<CouncilSession[]> {
 /**
  * 公開済みの議案または一般質問が存在する定例会を新しい順に取得。
  *
- * is_active では絞らない（手動更新のフラグと実際の会期がずれうるため）。
+ * PostgREST の max_rows=1000 で議案・質問テーブル側が打ち切られるのを防ぐため、
+ * council_sessions 起点で `!inner` 結合して存在確認のみ行う。
  */
-export async function findAllPastCouncilSessions(): Promise<CouncilSession[]> {
+export async function findAllPastCouncilSessions(): Promise<
+  PastCouncilSession[]
+> {
   const supabase = createAdminClient();
-  const sessionIds = new Set<string>();
+  const byId = new Map<string, PastCouncilSession>();
 
   const queries: Promise<void>[] = [];
 
@@ -106,15 +109,30 @@ export async function findAllPastCouncilSessions(): Promise<CouncilSession[]> {
     queries.push(
       (async () => {
         const { data, error } = await supabase
-          .from("bills")
-          .select("council_session_id")
-          .eq("publish_status", "published");
+          .from("council_sessions")
+          .select("*, bills!inner(id)")
+          .eq("bills.publish_status", "published")
+          .limit(1, { referencedTable: "bills" })
+          .order("start_date", { ascending: false });
         if (error) {
-          console.error("Failed to fetch published bills:", error);
+          console.error(
+            "Failed to fetch sessions with published bills:",
+            error
+          );
           return;
         }
         for (const row of data ?? []) {
-          if (row.council_session_id) sessionIds.add(row.council_session_id);
+          const { bills: _bills, ...sessionRow } =
+            row as unknown as CouncilSessionRow & {
+              bills: unknown;
+            };
+          const parsed = toCouncilSession(sessionRow);
+          if (!parsed) continue;
+          const existing = byId.get(parsed.id);
+          byId.set(parsed.id, {
+            ...(existing ?? parsed),
+            hasBills: true,
+          });
         }
       })()
     );
@@ -124,15 +142,32 @@ export async function findAllPastCouncilSessions(): Promise<CouncilSession[]> {
     queries.push(
       (async () => {
         const { data, error } = await supabase
-          .from("general_questions")
-          .select("council_session_id")
-          .eq("publish_status", "published");
+          .from("council_sessions")
+          .select("*, general_questions!inner(id)")
+          .eq("general_questions.publish_status", "published")
+          .limit(1, { referencedTable: "general_questions" })
+          .order("start_date", { ascending: false });
         if (error) {
-          console.error("Failed to fetch published general questions:", error);
+          if (error.code !== "42P01" && error.code !== "PGRST205") {
+            console.error(
+              "Failed to fetch sessions with published general questions:",
+              error
+            );
+          }
           return;
         }
         for (const row of data ?? []) {
-          if (row.council_session_id) sessionIds.add(row.council_session_id);
+          const { general_questions: _questions, ...sessionRow } =
+            row as unknown as CouncilSessionRow & {
+              general_questions: unknown;
+            };
+          const parsed = toCouncilSession(sessionRow);
+          if (!parsed) continue;
+          const existing = byId.get(parsed.id);
+          byId.set(parsed.id, {
+            ...(existing ?? parsed),
+            hasQuestions: true,
+          });
         }
       })()
     );
@@ -140,22 +175,9 @@ export async function findAllPastCouncilSessions(): Promise<CouncilSession[]> {
 
   await Promise.all(queries);
 
-  if (sessionIds.size === 0) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("council_sessions")
-    .select("*")
-    .in("id", [...sessionIds])
-    .order("start_date", { ascending: false });
-
-  if (error) {
-    console.error("Failed to fetch past council sessions:", error);
-    return [];
-  }
-
-  return toCouncilSessions(data ?? []);
+  return [...byId.values()].sort((a, b) =>
+    b.start_date.localeCompare(a.start_date)
+  );
 }
 
 /**

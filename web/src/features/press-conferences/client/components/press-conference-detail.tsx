@@ -2,6 +2,8 @@
 
 import { ExternalLink, Mic, PlayCircle } from "lucide-react";
 import { siteConfig } from "@/config/site.config";
+import { formatJapaneseDateWithWeekday } from "@/lib/utils/format-japanese-date";
+import { toSafeExternalUrl } from "@/lib/utils/safe-url";
 import type { PressConference } from "../../shared/types";
 import { AnnouncementItem } from "./announcement-item";
 import { QaItem } from "./qa-item";
@@ -22,10 +24,8 @@ export function PressConferenceDetail({ pressConference }: Props) {
     ? `${siteConfig.executiveName}${siteConfig.executiveTitle}`
     : siteConfig.executiveTitle;
 
-  const formattedDate = new Date(pressConference.heldAt).toLocaleDateString(
-    "ja-JP",
-    { year: "numeric", month: "long", day: "numeric", weekday: "short" }
-  );
+  const formattedDate = formatJapaneseDateWithWeekday(pressConference.heldAt);
+  const safeYoutubeUrl = toSafeExternalUrl(pressConference.youtubeUrl);
 
   return (
     <div className="flex flex-col gap-8">
@@ -40,9 +40,9 @@ export function PressConferenceDetail({ pressConference }: Props) {
           {executiveLabel}
           が記者の皆さんと直接やりとりした内容を、わかりやすくお届けします。
         </p>
-        {pressConference.youtubeUrl && (
+        {safeYoutubeUrl && (
           <a
-            href={pressConference.youtubeUrl}
+            href={safeYoutubeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-white bg-primary-accent hover:bg-primary-accent/90 transition-colors rounded-full px-4 py-2 w-fit"

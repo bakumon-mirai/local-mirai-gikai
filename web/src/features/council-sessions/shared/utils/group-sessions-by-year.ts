@@ -1,25 +1,37 @@
 import type { CouncilSession } from "../types";
 
-export type SessionsByYear = {
+export type SessionsByYear<T extends CouncilSession = CouncilSession> = {
   year: number;
-  sessions: CouncilSession[];
+  sessions: T[];
 };
 
+function parseYearMonth(
+  dateStr: string
+): { year: number; month: number } | null {
+  const match = dateStr.slice(0, 10).match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+  };
+}
+
 /**
- * 定例会を start_date の年でグループ化する（新しい年順）
+ * 定例会を start_date の年でグループ化する（新しい年順・タイムゾーン非依存）
  */
-export function groupSessionsByYear(
-  sessions: CouncilSession[]
-): SessionsByYear[] {
-  const map = new Map<number, CouncilSession[]>();
+export function groupSessionsByYear<T extends CouncilSession>(
+  sessions: T[]
+): SessionsByYear<T>[] {
+  const map = new Map<number, T[]>();
 
   for (const session of sessions) {
-    const year = new Date(session.start_date).getFullYear();
-    const existing = map.get(year);
+    const ym = parseYearMonth(session.start_date);
+    if (!ym) continue;
+    const existing = map.get(ym.year);
     if (existing) {
       existing.push(session);
     } else {
-      map.set(year, [session]);
+      map.set(ym.year, [session]);
     }
   }
 
@@ -29,23 +41,28 @@ export function groupSessionsByYear(
 }
 
 /**
- * 定例会の期間を "YYYY.M〜M" 形式でフォーマットする
+ * 定例会の期間を "YYYY.M〜M"（年跨ぎ時は "YYYY.M〜YYYY.M"）形式でフォーマットする
  */
 export function formatSessionPeriod(session: CouncilSession): string {
-  const start = new Date(session.start_date);
-  const startYear = start.getFullYear();
-  const startMonth = start.getMonth() + 1;
+  const start = parseYearMonth(session.start_date);
+  if (!start) return session.start_date;
 
   if (!session.end_date) {
-    return `${startYear}.${startMonth}`;
+    return `${start.year}.${start.month}`;
   }
 
-  const end = new Date(session.end_date);
-  const endMonth = end.getMonth() + 1;
-
-  if (startMonth === endMonth) {
-    return `${startYear}.${startMonth}`;
+  const end = parseYearMonth(session.end_date);
+  if (!end) {
+    return `${start.year}.${start.month}`;
   }
 
-  return `${startYear}.${startMonth}〜${endMonth}`;
+  if (start.year !== end.year) {
+    return `${start.year}.${start.month}〜${end.year}.${end.month}`;
+  }
+
+  if (start.month === end.month) {
+    return `${start.year}.${start.month}`;
+  }
+
+  return `${start.year}.${start.month}〜${end.month}`;
 }

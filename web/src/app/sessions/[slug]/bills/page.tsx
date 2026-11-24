@@ -12,6 +12,10 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props) {
+  if (!siteConfig.features.bills) {
+    return { title: "ページが見つかりません" };
+  }
+
   const { slug } = await params;
   const session = await getCouncilSessionBySlug(slug);
 
@@ -19,9 +23,13 @@ export async function generateMetadata({ params }: Props) {
     return { title: "定例会が見つかりません" };
   }
 
+  const period = session.end_date
+    ? `${session.start_date}〜${session.end_date}`
+    : `${session.start_date}〜`;
+
   return {
     title: `${session.name}の議案一覧 | ${siteConfig.siteName}`,
-    description: `${session.name}（${session.start_date}〜${session.end_date}）に上程された議案の一覧です。`,
+    description: `${session.name}（${period}）に上程された議案の一覧です。`,
   };
 }
 

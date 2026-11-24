@@ -1,7 +1,9 @@
 import "server-only";
-import type { PressConference } from "../../shared/types";
-import { findPublishedPressConferences } from "../repositories/press-conference-repository";
+import type { PressConferenceListItem } from "../../shared/types";
+import { findPublishedPressConferenceList } from "../repositories/press-conference-repository";
 
-export async function getPressConferences(): Promise<PressConference[]> {
-  return findPublishedPressConferences();
+export async function getPressConferences(): Promise<
+  PressConferenceListItem[]
+> {
+  return findPublishedPressConferenceList();
 }

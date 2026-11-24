@@ -3,9 +3,10 @@ import { ArrowDown, ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
+import { toSafeExternalUrl } from "@/lib/utils/safe-url";
 import { ChatTranscript } from "../../client/components/chat-transcript";
 import type { CommitteeMeetingDetail } from "../../shared/types";
-import { buildTranscriptSections } from "../../shared/utils/build-transcript-sections";
+import { buildPublicTranscriptSections } from "../../shared/utils/build-transcript-sections";
 import { formatJapaneseDate } from "../../shared/utils/format-japanese-date";
 import { normalizeSpeeches } from "../../shared/utils/normalize-speeches";
 
@@ -14,17 +15,15 @@ type Props = {
 };
 
 export function TranscriptView({ meeting }: Props) {
-  const sections = buildTranscriptSections(
+  const sections = buildPublicTranscriptSections(
     normalizeSpeeches(meeting.speeches),
     meeting.topics
   );
-  const topicSections = sections.filter(
-    (s) =>
-      s.topic !== null &&
-      s.speeches.some((sp) => Boolean(sp.simpleText?.trim()))
-  );
-  const sourceHref = meeting.sourceUrl ?? siteConfig.councilBaseUrl;
-  const sourceLabel = meeting.sourceUrl
+  const topicSections = sections.filter((s) => s.topic !== null);
+  const safeSourceUrl = toSafeExternalUrl(meeting.sourceUrl);
+  const sourceHref =
+    safeSourceUrl ?? toSafeExternalUrl(siteConfig.councilBaseUrl);
+  const sourceLabel = safeSourceUrl
     ? `${siteConfig.councilName} 公式会議録を見る`
     : `${siteConfig.councilName} 公式サイトを見る`;
 

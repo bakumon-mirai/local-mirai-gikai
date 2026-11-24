@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: Props) {
         <SearchForm />
       </Suspense>
       <div className="mt-8">
-        <SearchResultTabs query={query} results={results} />
+        <SearchResultTabs key={query} query={query} results={results} />
       </div>
     </Container>
   );

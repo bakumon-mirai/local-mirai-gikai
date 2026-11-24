@@ -1,15 +1,15 @@
-"use client";
-
-import type { CommitteeSpeech } from "../../shared/types";
-import type { TranscriptSection } from "../../shared/utils/build-transcript-sections";
-import { isNameCallSpeech } from "../../shared/utils/normalize-speeches";
+import type { PublicTranscriptSpeech } from "../../shared/types";
+import type { PublicTranscriptSection } from "../../shared/utils/build-transcript-sections";
 import { splitSpeechSegments } from "../../shared/utils/split-speech-segments";
 
 type Props = {
-  sections: TranscriptSection[];
+  sections: PublicTranscriptSection[];
 };
 
-const SPEAKER_TYPE_LABEL: Record<CommitteeSpeech["speakerType"], string> = {
+const SPEAKER_TYPE_LABEL: Record<
+  PublicTranscriptSpeech["speakerType"],
+  string
+> = {
   chairperson: "委員長",
   member: "委員",
   executive: "行政の担当者",
@@ -17,26 +17,21 @@ const SPEAKER_TYPE_LABEL: Record<CommitteeSpeech["speakerType"], string> = {
 };
 
 /** 執行部（答える側）を右、委員・委員長（聞く側）を左に出す */
-function isRightSide(speech: CommitteeSpeech): boolean {
+function isRightSide(speech: PublicTranscriptSpeech): boolean {
   return speech.speakerType === "executive";
 }
 
-function SpeechBubbles({ speech }: { speech: CommitteeSpeech }) {
-  const simpleText = speech.simpleText?.trim();
-  if (!simpleText) return null;
-
-  // 指名だけの発言は吹き出しにせず、場内の進行として小さく表示する
-  if (isNameCallSpeech(speech)) {
+function SpeechBubbles({ speech }: { speech: PublicTranscriptSpeech }) {
+  if (speech.isNameCall) {
     return (
       <p className="text-center text-xs text-mirai-text-muted">
-        ▷ {simpleText}
+        ▷ {speech.simpleText}
       </p>
     );
   }
 
   const right = isRightSide(speech);
-  const segments = splitSpeechSegments(simpleText);
-  // 冒頭が〔場内の様子〕で始まる発言でもラベルを出せるよう、最初の本文位置を使う
+  const segments = splitSpeechSegments(speech.simpleText);
   const firstTextIndex = segments.findIndex((s) => s.kind === "text");
 
   return (
@@ -93,17 +88,10 @@ function SpeechBubbles({ speech }: { speech: CommitteeSpeech }) {
 }
 
 /**
- * 委員会のわかりやすいやり取り（simpleText のみ表示。原文は非表示とし出典リンクで案内する）。
+ * 委員会のわかりやすいやり取り（サーバー側で原文 text を除去済みの simpleText のみ描画）。
  */
 export function ChatTranscript({ sections }: Props) {
-  const visibleSections = sections
-    .map((section) => ({
-      ...section,
-      speeches: section.speeches.filter((s) => Boolean(s.simpleText?.trim())),
-    }))
-    .filter((section) => section.speeches.length > 0);
-
-  if (visibleSections.length === 0) {
+  if (sections.length === 0) {
     return (
       <div className="rounded-2xl border border-mirai-border bg-white p-5 text-sm text-mirai-text-secondary leading-relaxed">
         この会議のわかりやすい表現は現在準備中です。詳しい発言内容は下記の公式会議録をご確認ください。
@@ -113,7 +101,7 @@ export function ChatTranscript({ sections }: Props) {
 
   return (
     <div className="flex flex-col gap-10">
-      {visibleSections.map((section) => (
+      {sections.map((section) => (
         <section
           key={section.topic?.id ?? "opening"}
           id={section.topic ? `topic-${section.topic.topicOrder}` : undefined}

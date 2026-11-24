@@ -1,3 +1,4 @@
+import "server-only";
 import type { GeneralQuestion } from "../../shared/types";
 import { GeneralQuestionCard } from "./general-question-card";
 

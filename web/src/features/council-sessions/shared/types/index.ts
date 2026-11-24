@@ -30,3 +30,9 @@ export type SessionMilestones = {
   standingCommittees: DateRange | null;
   billVote: string | null;
 };
+
+/** 過去定例会一覧用（議案・一般質問それぞれの公開有無を保持） */
+export type PastCouncilSession = CouncilSession & {
+  hasBills?: boolean;
+  hasQuestions?: boolean;
+};

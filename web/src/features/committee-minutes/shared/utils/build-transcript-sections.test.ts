@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CommitteeMeetingTopic, CommitteeSpeech } from "../types";
-import { buildTranscriptSections } from "./build-transcript-sections";
+import {
+  buildPublicTranscriptSections,
+  buildTranscriptSections,
+} from "./build-transcript-sections";
 
 const speech = (voiceNo: number): CommitteeSpeech => ({
   voiceNo,
@@ -63,5 +66,51 @@ describe("buildTranscriptSections", () => {
     const sections = buildTranscriptSections(speeches, [topic(1, null, null)]);
     expect(sections).toHaveLength(1);
     expect(sections[0].topic).toBeNull();
+  });
+});
+
+describe("buildPublicTranscriptSections", () => {
+  it("原文 text を除去し simpleText を持つ発言のみ公開用セクションへ含める", () => {
+    const input: CommitteeSpeech[] = [
+      {
+        voiceNo: 1,
+        speakerLabel: "山田太郎委員長",
+        speakerType: "chairperson",
+        text: "田中企画課長。",
+        simpleText: "田中企画課長を指名しました。",
+      },
+      {
+        voiceNo: 2,
+        speakerLabel: "田中企画課長",
+        speakerType: "executive",
+        text: "原文テキスト（非公開）",
+      },
+      {
+        voiceNo: 3,
+        speakerLabel: "佐藤花子委員",
+        speakerType: "member",
+        text: "詳細な原文（非公開）",
+        simpleText: "わかりやすく言い換えた質問です。",
+      },
+    ];
+    const result = buildPublicTranscriptSections(input, [topic(1, 1, 3)]);
+    expect(result).toHaveLength(1);
+    expect(result[0].speeches).toEqual([
+      {
+        voiceNo: 1,
+        speakerLabel: "山田太郎委員長",
+        speakerType: "chairperson",
+        simpleText: "田中企画課長を指名しました。",
+        isNameCall: true,
+      },
+      {
+        voiceNo: 3,
+        speakerLabel: "佐藤花子委員",
+        speakerType: "member",
+        simpleText: "わかりやすく言い換えた質問です。",
+        isNameCall: false,
+      },
+    ]);
+    expect("text" in result[0].speeches[0]).toBe(false);
   });
 });

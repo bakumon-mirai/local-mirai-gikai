@@ -10,9 +10,12 @@ import {
 import Link from "next/link";
 import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
+import { toSafeExternalUrl } from "@/lib/utils/safe-url";
 import type { CommitteeMeetingDetail } from "../../shared/types";
+import { buildPublicTranscriptSections } from "../../shared/utils/build-transcript-sections";
 import { getCommitteeTypeLabel } from "../../shared/utils/committee-type";
 import { formatJapaneseDate } from "../../shared/utils/format-japanese-date";
+import { normalizeSpeeches } from "../../shared/utils/normalize-speeches";
 
 type Props = {
   meeting: CommitteeMeetingDetail;
@@ -23,12 +26,23 @@ export function MeetingDetailView({ meeting }: Props) {
     meeting.committeeSlug,
     meeting.id
   );
-  const simpleSpeechCount = meeting.speeches.filter((s) =>
-    Boolean(s.simpleText?.trim())
-  ).length;
+  const publicSections = buildPublicTranscriptSections(
+    normalizeSpeeches(meeting.speeches),
+    meeting.topics
+  );
+  const simpleSpeechCount = publicSections.reduce(
+    (sum, s) => sum + s.speeches.length,
+    0
+  );
   const hasSimpleTranscript = simpleSpeechCount > 0;
-  const sourceHref = meeting.sourceUrl ?? siteConfig.councilBaseUrl;
-  const sourceLabel = meeting.sourceUrl
+  const linkedTopicOrders = new Set(
+    publicSections
+      .map((s) => s.topic?.topicOrder)
+      .filter((order): order is number => order != null)
+  );
+  const safeSourceUrl = toSafeExternalUrl(meeting.sourceUrl);
+  const sourceHref = safeSourceUrl ?? toSafeExternalUrl(siteConfig.councilBaseUrl);
+  const sourceLabel = safeSourceUrl
     ? `${siteConfig.councilName} 公式会議録を見る`
     : `${siteConfig.councilName} 公式サイトを見る`;
 
@@ -110,7 +124,7 @@ export function MeetingDetailView({ meeting }: Props) {
                     </div>
                   </div>
                 )}
-                {hasSimpleTranscript && (
+                {linkedTopicOrders.has(topic.topicOrder) && (
                   <div className="mt-3 pl-9">
                     <Link
                       href={`${transcriptPath}#topic-${topic.topicOrder}`}

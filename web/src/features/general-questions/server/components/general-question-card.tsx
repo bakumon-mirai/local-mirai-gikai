@@ -1,3 +1,4 @@
+import "server-only";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";

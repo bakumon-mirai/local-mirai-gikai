@@ -3,6 +3,7 @@
 import { ChevronDown, ExternalLink, FileText } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { toSafeExternalUrl } from "@/lib/utils/safe-url";
 import type { PressConferenceItem } from "../../shared/types";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export function AnnouncementItem({ item, index }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const safeMaterialUrl = toSafeExternalUrl(item.materialUrl);
 
   return (
     <div className="bg-white rounded-2xl border-l-4 border-primary shadow-sm px-5 py-4 flex flex-col gap-2">
@@ -48,9 +50,9 @@ export function AnnouncementItem({ item, index }: Props) {
           )}
         </div>
       )}
-      {item.materialUrl && (
+      {safeMaterialUrl && (
         <a
-          href={item.materialUrl}
+          href={safeMaterialUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-accent hover:underline pl-9 w-fit"

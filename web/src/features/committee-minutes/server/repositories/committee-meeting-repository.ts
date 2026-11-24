@@ -1,7 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@mirai-gikai/supabase";
 import type {
-  CommitteeArchive,
   CommitteeMeetingDetail,
   CommitteeMeetingSummary,
   CommitteeMeetingTopic,
@@ -139,13 +138,29 @@ export async function findMeetingsBySlug(
   return (data ?? []).map((row) => mapSummary(row as unknown as MeetingRow));
 }
 
+// 詳細取得時は raw_text を除外し、公開処理に必要な列のみ取得する
+const DETAIL_SELECT = `
+  id,
+  committee_name,
+  committee_slug,
+  meeting_date,
+  title,
+  source_id,
+  source_url,
+  summary,
+  speech_count,
+  speeches,
+  committees (committee_type),
+  committee_meeting_topics (*)
+` as const;
+
 export async function findMeetingById(
   meetingId: string
 ): Promise<CommitteeMeetingDetail | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("committee_meetings")
-    .select(`*, committees (committee_type), committee_meeting_topics (*)`)
+    .select(DETAIL_SELECT)
     .eq("id", meetingId)
     .eq("publish_status", "published")
     .maybeSingle();
@@ -165,26 +180,4 @@ export async function findMeetingById(
       ? (row.speeches as CommitteeSpeech[])
       : [],
   };
-}
-
-/** 会議データから委員会の一覧（最新開催日つき）を組み立てる */
-export function buildArchives(
-  meetings: CommitteeMeetingSummary[]
-): CommitteeArchive[] {
-  const bySlug = new Map<string, CommitteeMeetingSummary[]>();
-  for (const m of meetings) {
-    const list = bySlug.get(m.committeeSlug) ?? [];
-    list.push(m);
-    bySlug.set(m.committeeSlug, list);
-  }
-  return [...bySlug.entries()].map(([slug, list]) => {
-    const latest = list[0];
-    return {
-      slug,
-      name: latest.committeeName,
-      committeeType: latest.committeeType,
-      meetingCount: list.length,
-      latestMeetingDate: latest.meetingDate,
-    };
-  });
 }

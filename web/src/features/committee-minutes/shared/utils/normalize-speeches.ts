@@ -5,7 +5,7 @@ import type { CommitteeSpeech, SpeakerType } from "../types";
 const RECORD_LINE_RE =
   /^[\s　]*((令和|平成)[〇一二三四五六七八九十百元\s　]+年.+)$|^[\s　]*午[\s　]*[前後][\s　].*$/;
 
-// 「山田空港事業課長。」のような、次の発言者を指名しただけの発言
+// 「鈴木企画課長。」のような、次の発言者を指名しただけの発言
 const NAME_CALL_RE =
   /^[^\n]{1,30}(課長|部長|局長|次長|室長|理事|監|所長|委員|知事|副知事|市長|副市長|区長|副区長|町長|副町長|村長|副村長|教育長|本部長|書記)。$/;
 
@@ -20,7 +20,7 @@ function classifySpeaker(label: string): SpeakerType {
 }
 
 /**
- * 「◯堀\n大助委員」のように氏名が改行で分断されてラベルが不完全な発言を直す。
+ * 「◯佐藤\n花子委員」のように氏名が改行で分断されてラベルが不完全な発言を直す。
  */
 function repairSplitLabel(speech: CommitteeSpeech): CommitteeSpeech {
   if (!speech.speakerLabel || ROLE_SUFFIX_RE.test(speech.speakerLabel)) {
@@ -43,9 +43,9 @@ function repairSplitLabel(speech: CommitteeSpeech): CommitteeSpeech {
  * 表示用に発言一覧を整える。
  * - 日時・開閉会の記録行を取り除く
  * - 発言の途中に「◯氏名役職　…」で始まる別の発言が埋め込まれている場合は分割する
- *   （会議録の先頭ブロックは日付見出しと最初の発言が1ブロックにまとまっている）
  * - 改行で分断された発言者ラベルを修復する
  * - 中身が空になったブロックは取り除く
+ * - 複数発言へ分割された場合は simpleText の重複適用を避けるため先頭単一チャンク時のみ引き継ぐ
  */
 export function normalizeSpeeches(
   speeches: CommitteeSpeech[]
@@ -58,7 +58,6 @@ export function normalizeSpeeches(
       continue;
     }
 
-    // 記録行を除去しつつ、◯で始まる行を境に発言を分割する
     const chunks: { label: string | null; lines: string[] }[] = [];
     for (const line of speech.text.split("\n")) {
       if (RECORD_LINE_RE.test(line)) continue;
@@ -72,15 +71,21 @@ export function normalizeSpeeches(
       }
     }
 
-    for (const chunk of chunks) {
-      const text = chunk.lines.join("\n").trim();
-      if (text.length === 0) continue;
+    const nonEmptyChunks = chunks
+      .map((chunk) => ({
+        label: chunk.label,
+        text: chunk.lines.join("\n").trim(),
+      }))
+      .filter((chunk) => chunk.text.length > 0);
+
+    for (const chunk of nonEmptyChunks) {
       result.push({
         voiceNo: speech.voiceNo,
         speakerLabel: chunk.label,
         speakerType: chunk.label ? classifySpeaker(chunk.label) : "unknown",
-        text,
-        simpleText: speech.simpleText,
+        text: chunk.text,
+        // 1発言が複数人の発言に分割された場合、同じ simpleText を全発言へ複製しない
+        simpleText: nonEmptyChunks.length === 1 ? speech.simpleText : undefined,
       });
     }
   }
