@@ -18,7 +18,15 @@ export function TranscriptView({ meeting }: Props) {
     normalizeSpeeches(meeting.speeches),
     meeting.topics
   );
-  const topicSections = sections.filter((s) => s.topic !== null);
+  const topicSections = sections.filter(
+    (s) =>
+      s.topic !== null &&
+      s.speeches.some((sp) => Boolean(sp.simpleText?.trim()))
+  );
+  const sourceHref = meeting.sourceUrl ?? siteConfig.councilBaseUrl;
+  const sourceLabel = meeting.sourceUrl
+    ? `${siteConfig.councilName} 公式会議録を見る`
+    : `${siteConfig.councilName} 公式サイトを見る`;
 
   return (
     <div className="space-y-8">
@@ -31,7 +39,7 @@ export function TranscriptView({ meeting }: Props) {
           会議のまとめへ戻る
         </Link>
         <h1 className="mt-3 text-xl sm:text-2xl font-bold text-mirai-text">
-          発言のやり取り
+          わかりやすいやり取り
         </h1>
         <p className="mt-1 text-sm text-mirai-text-secondary">
           {meeting.committeeName}・{formatJapaneseDate(meeting.meetingDate)}{" "}
@@ -62,19 +70,21 @@ export function TranscriptView({ meeting }: Props) {
 
       <ChatTranscript sections={sections} />
 
-      {meeting.sourceUrl && (
-        <p className="text-xs text-mirai-text-muted">
-          出典:{" "}
+      {sourceHref && (
+        <div className="rounded-2xl border border-mirai-border bg-white p-5">
+          <p className="text-xs text-mirai-text-secondary leading-relaxed">
+            正確な発言記録・原文は公式会議録をご確認ください。
+          </p>
           <a
-            href={meeting.sourceUrl}
+            href={sourceHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary-accent hover:underline"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-accent hover:underline"
           >
-            {siteConfig.councilName} 公式会議録
-            <ExternalLink className="size-3" />
+            {sourceLabel}
+            <ExternalLink className="size-3.5" />
           </a>
-        </p>
+        </div>
       )}
     </div>
   );

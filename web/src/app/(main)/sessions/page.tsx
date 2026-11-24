@@ -5,6 +5,8 @@ import { siteConfig } from "@/config/site.config";
 import { SessionList } from "@/features/council-sessions/server/components/session-list";
 import { getAllPastSessions } from "@/features/council-sessions/server/loaders/get-all-past-sessions";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: `過去の議会一覧 | ${siteConfig.siteName}`,
   description: `${siteConfig.councilName}で過去に開催された定例会の一覧です。`,

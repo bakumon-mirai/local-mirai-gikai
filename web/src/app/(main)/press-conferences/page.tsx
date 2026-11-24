@@ -5,6 +5,8 @@ import { siteConfig } from "@/config/site.config";
 import { PressConferenceList } from "@/features/press-conferences/client/components/press-conference-list";
 import { getPressConferences } from "@/features/press-conferences/server/loaders/get-press-conferences";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: `${siteConfig.executiveTitle}記者会見 | ${siteConfig.siteName}`,
   description: `${siteConfig.cityName}${siteConfig.executiveTitle}の定例記者会見の内容をわかりやすくまとめています。`,

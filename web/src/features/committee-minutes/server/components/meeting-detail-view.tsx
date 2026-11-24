@@ -3,10 +3,12 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  ExternalLink,
   FileText,
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
 import type { CommitteeMeetingDetail } from "../../shared/types";
 import { getCommitteeTypeLabel } from "../../shared/utils/committee-type";
@@ -21,6 +23,14 @@ export function MeetingDetailView({ meeting }: Props) {
     meeting.committeeSlug,
     meeting.id
   );
+  const simpleSpeechCount = meeting.speeches.filter((s) =>
+    Boolean(s.simpleText?.trim())
+  ).length;
+  const hasSimpleTranscript = simpleSpeechCount > 0;
+  const sourceHref = meeting.sourceUrl ?? siteConfig.councilBaseUrl;
+  const sourceLabel = meeting.sourceUrl
+    ? `${siteConfig.councilName} 公式会議録を見る`
+    : `${siteConfig.councilName} 公式サイトを見る`;
 
   return (
     <div className="flex flex-col gap-8">
@@ -58,7 +68,7 @@ export function MeetingDetailView({ meeting }: Props) {
       {meeting.topics.length === 0 ? (
         <div className="rounded-2xl border border-mirai-border bg-white p-5">
           <p className="text-sm text-mirai-text-secondary leading-relaxed">
-            この会議では、委員長の選出など会議を運営するための手続きが行われました。くわしい内容は「発言のやり取り」をご覧ください。
+            この会議では、委員長の選出など会議を運営するための手続きが行われました。くわしい内容は公式会議録をご覧ください。
           </p>
         </div>
       ) : (
@@ -100,33 +110,54 @@ export function MeetingDetailView({ meeting }: Props) {
                     </div>
                   </div>
                 )}
-                <div className="mt-3 pl-9">
-                  <Link
-                    href={`${transcriptPath}#topic-${topic.topicOrder}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary-accent hover:underline"
-                  >
-                    このやり取りを読む
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+                {hasSimpleTranscript && (
+                  <div className="mt-3 pl-9">
+                    <Link
+                      href={`${transcriptPath}#topic-${topic.topicOrder}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary-accent hover:underline"
+                    >
+                      わかりやすいやり取りを読む
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
               </li>
             ))}
           </ol>
         </section>
       )}
 
-      <div className="rounded-2xl border border-mirai-border bg-white p-5">
-        <Link
-          href={transcriptPath}
-          className="inline-flex items-center gap-2 font-bold text-primary-accent hover:underline"
-        >
-          <FileText className="w-4 h-4" />
-          発言のやり取りを読む（{meeting.speeches.length}発言）
-        </Link>
-        <p className="mt-2 text-xs text-mirai-text-muted">
-          チャット形式で会議のやり取りを読めます。わかりやすい表現と原文を切り替えられます。
-        </p>
-      </div>
+      {hasSimpleTranscript && (
+        <div className="rounded-2xl border border-mirai-border bg-white p-5">
+          <Link
+            href={transcriptPath}
+            className="inline-flex items-center gap-2 font-bold text-primary-accent hover:underline"
+          >
+            <FileText className="w-4 h-4" />
+            わかりやすいやり取りを読む（{simpleSpeechCount}発言）
+          </Link>
+          <p className="mt-2 text-xs text-mirai-text-muted">
+            チャット形式で会議のやり取りをわかりやすく読めます。
+          </p>
+        </div>
+      )}
+
+      {sourceHref && (
+        <div className="rounded-2xl border border-mirai-border bg-white p-5">
+          <p className="text-xs text-mirai-text-secondary leading-relaxed">
+            正確な発言記録・原文は公式会議録をご確認ください。
+          </p>
+          <a
+            href={sourceHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-accent hover:underline"
+          >
+            {sourceLabel}
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+      )}
     </div>
   );
 }

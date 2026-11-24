@@ -6,8 +6,6 @@ import { Container } from "@/components/layouts/container";
 import { siteConfig } from "@/config/site.config";
 import { getCouncilSessionById } from "@/features/council-sessions/server/loaders/get-council-session-by-id";
 import { QuestionChatView } from "@/features/general-questions/client/components/question-chat-view";
-import { QuestionViewToggle } from "@/features/general-questions/client/components/question-view-toggle";
-import { RawTranscriptView } from "@/features/general-questions/server/components/raw-transcript-view";
 import { getGeneralQuestionById } from "@/features/general-questions/server/loaders/get-general-question-by-id";
 import { questionTypeLabel } from "@/features/general-questions/shared/utils/question-type-label";
 import { routes } from "@/lib/routes";
@@ -53,6 +51,10 @@ export default async function GeneralQuestionDetailPage({ params }: Props) {
     ? routes.sessionQuestions(session.slug)
     : routes.questions();
   const typeLabel = questionTypeLabel(question.question_type);
+  const sourceHref = question.source_url ?? siteConfig.councilBaseUrl;
+  const sourceLabel = question.source_url
+    ? `${siteConfig.councilName} 公式会議録を見る`
+    : `${siteConfig.councilName} 公式サイトを見る`;
 
   return (
     <Container className="py-8 max-w-2xl">
@@ -83,30 +85,27 @@ export default async function GeneralQuestionDetailPage({ params }: Props) {
         </p>
       )}
 
-      {question.raw_text && question.topics.length > 0 ? (
-        <QuestionViewToggle
-          topics={question.topics}
-          rawText={question.raw_text}
-          answerRawText={question.answer_raw_text}
-          questionerName={question.questioner_name}
-          questionerNumber={question.questioner_number}
-        />
-      ) : question.raw_text ? (
-        <RawTranscriptView rawText={question.raw_text} />
-      ) : (
+      {question.topics.length > 0 ? (
         <QuestionChatView topics={question.topics} />
+      ) : (
+        <div className="rounded-2xl border border-mirai-border bg-white p-5 text-sm text-mirai-text-secondary leading-relaxed">
+          論点の要約は現在準備中です。詳しい発言内容は下記の公式会議録をご確認ください。
+        </div>
       )}
 
-      {question.source_url && (
-        <div className="mt-8 pt-6 border-t border-border">
+      {sourceHref && (
+        <div className="mt-8 rounded-2xl border border-mirai-border bg-white p-5">
+          <p className="text-xs text-mirai-text-secondary leading-relaxed">
+            正確な発言記録・原文は公式会議録をご確認ください。
+          </p>
           <a
-            href={question.source_url}
+            href={sourceHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary-accent hover:underline"
           >
+            {sourceLabel}
             <ExternalLink className="w-4 h-4" />
-            公式会議録を見る
           </a>
         </div>
       )}

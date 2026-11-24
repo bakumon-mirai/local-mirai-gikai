@@ -1,8 +1,5 @@
 "use client";
 
-import { BookOpenText, MessageCircle } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import type { CommitteeSpeech } from "../../shared/types";
 import type { TranscriptSection } from "../../shared/utils/build-transcript-sections";
 import { isNameCallSpeech } from "../../shared/utils/normalize-speeches";
@@ -15,7 +12,7 @@ type Props = {
 const SPEAKER_TYPE_LABEL: Record<CommitteeSpeech["speakerType"], string> = {
   chairperson: "委員長",
   member: "委員",
-  executive: "県の担当者",
+  executive: "行政の担当者",
   unknown: "記録",
 };
 
@@ -24,25 +21,21 @@ function isRightSide(speech: CommitteeSpeech): boolean {
   return speech.speakerType === "executive";
 }
 
-function SpeechBubbles({
-  speech,
-  detailMode,
-}: {
-  speech: CommitteeSpeech;
-  detailMode: boolean;
-}) {
+function SpeechBubbles({ speech }: { speech: CommitteeSpeech }) {
+  const simpleText = speech.simpleText?.trim();
+  if (!simpleText) return null;
+
   // 指名だけの発言は吹き出しにせず、場内の進行として小さく表示する
   if (isNameCallSpeech(speech)) {
     return (
       <p className="text-center text-xs text-mirai-text-muted">
-        ▷ {speech.text}
+        ▷ {simpleText}
       </p>
     );
   }
 
   const right = isRightSide(speech);
-  const body = detailMode ? speech.text : (speech.simpleText ?? speech.text);
-  const segments = splitSpeechSegments(body);
+  const segments = splitSpeechSegments(simpleText);
   // 冒頭が〔場内の様子〕で始まる発言でもラベルを出せるよう、最初の本文位置を使う
   const firstTextIndex = segments.findIndex((s) => s.kind === "text");
 
@@ -99,62 +92,43 @@ function SpeechBubbles({
   );
 }
 
+/**
+ * 委員会のわかりやすいやり取り（simpleText のみ表示。原文は非表示とし出典リンクで案内する）。
+ */
 export function ChatTranscript({ sections }: Props) {
-  const [detailMode, setDetailMode] = useState(false);
-  const hasSimpleText = sections.some((section) =>
-    section.speeches.some((s) => s.simpleText)
-  );
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      speeches: section.speeches.filter((s) => Boolean(s.simpleText?.trim())),
+    }))
+    .filter((section) => section.speeches.length > 0);
+
+  if (visibleSections.length === 0) {
+    return (
+      <div className="rounded-2xl border border-mirai-border bg-white p-5 text-sm text-mirai-text-secondary leading-relaxed">
+        この会議のわかりやすい表現は現在準備中です。詳しい発言内容は下記の公式会議録をご確認ください。
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          aria-pressed={!detailMode}
-          variant={detailMode ? "outline" : "default"}
-          size="sm"
-          onClick={() => setDetailMode(false)}
+    <div className="flex flex-col gap-10">
+      {visibleSections.map((section) => (
+        <section
+          key={section.topic?.id ?? "opening"}
+          id={section.topic ? `topic-${section.topic.topicOrder}` : undefined}
+          className="scroll-mt-24 flex flex-col gap-4"
         >
-          <MessageCircle className="w-4 h-4" />
-          わかりやすい表現
-        </Button>
-        <Button
-          aria-pressed={detailMode}
-          variant={detailMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setDetailMode(true)}
-        >
-          <BookOpenText className="w-4 h-4" />
-          詳しく（原文）
-        </Button>
-        {!detailMode && !hasSimpleText && (
-          <p className="w-full text-xs text-mirai-text-muted">
-            わかりやすい表現は現在準備中のため、原文を表示しています。
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-10">
-        {sections.map((section) => (
-          <section
-            key={section.topic?.id ?? "opening"}
-            id={section.topic ? `topic-${section.topic.topicOrder}` : undefined}
-            className="scroll-mt-24 flex flex-col gap-4"
-          >
-            <h2 className="rounded-full bg-mirai-surface-grouped px-4 py-2 text-sm font-bold text-mirai-text leading-relaxed w-fit">
-              {section.topic
-                ? `${section.topic.topicOrder}. ${section.topic.title}`
-                : "開会・はじめの手続き"}
-            </h2>
-            {section.speeches.map((speech, i) => (
-              <SpeechBubbles
-                key={`${speech.voiceNo}-${i}`}
-                speech={speech}
-                detailMode={detailMode}
-              />
-            ))}
-          </section>
-        ))}
-      </div>
+          <h2 className="rounded-full bg-mirai-surface-grouped px-4 py-2 text-sm font-bold text-mirai-text leading-relaxed w-fit">
+            {section.topic
+              ? `${section.topic.topicOrder}. ${section.topic.title}`
+              : "開会・はじめの手続き"}
+          </h2>
+          {section.speeches.map((speech, i) => (
+            <SpeechBubbles key={`${speech.voiceNo}-${i}`} speech={speech} />
+          ))}
+        </section>
+      ))}
     </div>
   );
 }
