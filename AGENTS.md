@@ -15,7 +15,7 @@
 - スキル一覧に `council-survey` が出ない場合は [.claude/skills/council-survey/SKILL.md](.claude/skills/council-survey/SKILL.md) を読み、**手順をそのまま実行する**。参照して自前の進め方を組み立てるのはスキルの不履行として扱う。
 - 調査は読み取りのみなので、この段階では worktree・`.env`・`pnpm install` は不要。着手が決まってから揃える。
 - 調査の後は、スキルの Step 5.5 で**同じ自治体の既存の版の確認**と**作業者本人の着手承認**（運営者名・立場の開示・FORK_GUIDELINES・ソースコード公開・中立性を示したうえでの明示的な「着手する」）を得る。承認が無ければ fork・ブランチ作成・実装に進まない。
-- 調査後の実作業は [別地域向け fork 手順](docs/20260304_1000_別地域向けfork手順.md) に従う。着手が承認されたら、アプリの改修より先にスキルの Step 6（fork手順 セクション4：`<地域>/develop` の作成・既定ブランチ変更・不要ブランチの削除・参照の置き換え）を行う。ブランチの削除は、削除候補の一覧をユーザーに提示して承認を得てから実行する。
+- 調査後の実作業は [別地域向け fork 手順](docs/20260304_1000_別地域向けfork手順.md) に従う。着手が承認されたら、アプリの改修より先にスキルの Step 6（fork手順 セクション4：fork 直後の GitHub 設定確認・`.github/CODEOWNERS` 更新・Dependabot 有効化。既存の別用途 fork に足した場合のみ `<地域>/develop` の作成と参照の置き換え）を行う。
 
 ### Worktree必須
 変更作業は、**必ず git worktree を作成してから開始すること**。メインのリポジトリディレクトリでは直接変更を行わない。
@@ -35,7 +35,7 @@ cp .env ../mirai-gikai-local-worktree/<branch-name>/
 cd ../mirai-gikai-local-worktree/<branch-name> && pnpm install --frozen-lockfile
 ```
 
-- **目的**: base-local/developブランチを常にクリーンに保ち、作業の分離と並列作業を容易にする
+- **目的**: `main` ブランチを常にクリーンに保ち、作業の分離と並列作業を容易にする
 - **重要**: worktreeは必ずプロジェクト外（`../mirai-gikai-local-worktree/`）に作成すること。プロジェクト内（`.claude/worktrees/` 等）に作成するとBiomeが「nested root configuration」エラーを起こす。
 
 ### Worktreeクリーンアップ（必須）
@@ -55,14 +55,14 @@ git worktree prune
 ### 実装完了後は即PR作成
 実装完了後は「コミットしますか？」等の確認を挟まず、コミット → push → PR作成まで一気に進めること。ユーザーへの確認は不要。
 
-**ベースブランチは必ず `base-local/develop`**。`develop` や `main` へのPRは出さないこと。
+**ベースブランチは必ず `main`**（既存の別用途 fork に別ブランチで足した場合はそのベースブランチ）。本家やテンプレート配布元への PR は出さないこと。
 ```bash
-gh pr create --base base-local/develop ...
+gh pr create --base main ...
 ```
 
-> fork 時はこのファイル内の `base-local/develop` と `../mirai-gikai-local-worktree/` を、
-> fork 先のベースブランチ名・worktree パスに一括置換してください。
-> 同じ値が `.github/workflows/` と `.claude/` 配下にもあります。
+> 通常の fork では `main` のまま変更不要です。複数の地域版を同じマシンで扱う場合のみ、
+> `../mirai-gikai-local-worktree/` を `../mirai-gikai-<地域>-worktree/` 等に変更してください。
+> 既存の別用途 fork に別ブランチで足した場合のみ、このファイル・`.github/workflows/`・`.claude/` 内の `main` をそのブランチ名に置き換えてください。
 
 ### セルフレビュー必須
 実装完了後（コミット前）に、必ず `/review` スキルを実行してセルフレビューを受けること。`/review` はCodexレビュー・`test-guidelines-checker` によるテストガイドラインチェック・`code-quality-checker` によるコード品質チェックを同時に実行する。指摘があれば修正してからコミットする。

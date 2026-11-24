@@ -103,18 +103,7 @@ gh api "repos/<owner>/<repo>/dependabot/alerts?state=open&per_page=100" \
   lint・typecheck・test・build を通して PR を作る。PR 本文に元の Dependabot の PR 番号を書き、元の PR は close を提案する
   （リポジトリの作業ルールに worktree の指定があればそれに従う）
 
-## Step 6: テンプレートの配布元なら base-local/develop にも反映する
-
-作業中のリポジトリが `bakumon1107/mirai-gikai-fukuoka-city`（テンプレートの配布元）の場合、
-`base-local/develop` には Dependabot の PR が届かない。
-マージした修正のうち `base-local/develop` にも該当するライブラリがあれば、同じ版への上げ直しの PR を
-`base-local/develop` 向けに作ることを提案する（手順書の 4 章）。
-
-```bash
-git show origin/base-local/develop:pnpm-lock.yaml | grep -n "^  <名前>@" | head   # 該当の版を確認
-```
-
-## Step 7: 報告する
+## Step 6: 報告する
 
 PR ごとに、行ったこと（マージ／close／作り直し依頼／上げ直し PR の番号／保留）と、
 残っている alerts（Step 1 の一覧で修正が入っていないもの）をまとめて報告する。

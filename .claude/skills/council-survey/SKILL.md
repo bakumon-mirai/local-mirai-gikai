@@ -335,49 +335,28 @@ Step 5 のレポートと重複の確認結果を踏まえ、次を提示した�
 ### Step 6: 着手が決まったら GitHub を準備する
 
 Step 5.5 で着手の承認が得られたら、アプリの改修より先に
-[fork手順 セクション4](../../../docs/20260304_1000_別地域向けfork手順.md#4-自地域のブランチへ切り替える)
-を **4-0 → 4-1 → 4-2 → 4-7 → 4-3 → 4-8 の順に**実行する。
-調査だけで終わる場合（着手しない・保留）はこの Step は行わない。
+[fork手順 セクション4](../../../docs/20260304_1000_別地域向けfork手順.md#4-github-設定とブランチの確認)
+を実行する。調査だけで終わる場合（着手しない・保留）はこの Step は行わない。
 
-1. **4-0 前提の確認。** `gh repo set-default --view` が作業中の fork を指しているか確認する。
-   未設定・本家（team-mirai）・配布元を指している場合は、以降の `gh` 操作を行わずユーザーに伝える。
-   `git remote -v` で origin が fork であることも確かめる。
-   続けて、**この fork がテンプレートから作られたものか**を確かめる。
+1. **4-1 前提の確認。** `gh repo set-default --view` が作業中の fork を指しているか確認する。
+   未設定・本家（`team-mirai/mirai-gikai`）・配布元（`bakumon-mirai/local-mirai-gikai`）を指している場合は、以降の `gh` 操作を行わずユーザーに伝える。
+   `git remote -v` で `origin` が自分の fork、`template` が配布元であることも確かめる。
+   続けて、**この fork がテンプレートから新規に作られたものか**を確かめる。
 
    ```bash
    gh api repos/<owner>/<repo> --jq '.parent.full_name'
    ```
 
-   `bakumon1107/mirai-gikai-fukuoka-city` 以外（本家や別の地域版から作った既存の fork に
-   テンプレートのブランチを足した場合）は、**既存の fork に別の用途のブランチや稼働中のサービスがある前提**で扱い、
-   3.（ブランチ削除）と 2. の既定ブランチ変更は行わない。`<地域>/develop` の作成と 4. だけ行う
-2. **4-1・4-2 ブランチ作成と既定ブランチ変更。** `<地域>/develop` を `origin/base-local/develop` から作って push し、
-   `gh repo edit <owner>/<repo> --default-branch <地域>/develop` で既定ブランチにする。
-   `<地域>` はローマ字小文字（例: `shibuya`）。決まっていなければ Step 5 後の確認でまとめて聞く
-3. **4-7 不要ブランチの削除。** 削除候補は**配布元からコピーされたブランチだけ**に絞る
-   （fork で利用者が作ったブランチを候補に入れない）。
-
-   ```bash
-   git fetch origin --prune
-   comm -12 \
-     <(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin | sort) \
-     <(git ls-remote --heads https://github.com/bakumon1107/mirai-gikai-fukuoka-city.git | sed 's#.*refs/heads/##' | sort) \
-     | grep -vx -e HEAD -e base-local/develop -e '<地域>/develop'
-   ```
-
-   一覧を**ユーザーに提示し、承認を得てから**削除する。削除は元に戻せない。
-   既定ブランチを変える前に削除しない
-4. **4-3 参照の置き換え。** `base-local/develop`・`../mirai-gikai-local-worktree/`・`.github/CODEOWNERS` を
-   自地域向けに置き換え、PR で `<地域>/develop` に入れる。
-   この PR に限り、AGENTS.md の「ベースブランチは必ず `base-local/develop`」より
-   この手順を優先する（その記述自体をこの PR で置き換えるため）。
-   AGENTS.md の worktree の置き場所（`../mirai-gikai-local-worktree/`）は置き換え前の値をそのまま使ってよい
-5. Actions が fork で無効のままの場合は API では確実に有効化できないため、
-   ユーザーに **Actions タブで有効化する**よう伝える
-6. **4-8 Dependabot の有効化。** 既定ブランチを変えた後に、Dependabot alerts と security updates を有効にする
+   - **`bakumon-mirai/local-mirai-gikai` の場合（通常）**: 既定ブランチ `main` のままそのまま開発できるため、ブランチの作成・既定ブランチ変更・不要ブランチ削除・ワークフロー内のブランチ名置換は**不要**。手順 2 へ進む。
+   - **それ以外の場合（既存の別用途 fork にテンプレートのブランチを足した場合）**: 既存の fork に別の用途のブランチや稼働中のサービスがある前提で扱い、既定ブランチの変更やブランチ削除は行わない。`<地域>/develop` を `template/main` から作成済みであることを確認し、`.github/workflows/`・`AGENTS.md`・`.claude/` の `main` 参照を `<地域>/develop` に置き換える（手順 2 の CODEOWNERS 更新と同じ PR で `<地域>/develop` に入れる）。
+2. **4-2 `.github/CODEOWNERS` の書き換え。** `.github/CODEOWNERS` のコードオーナーを自分（または運営チーム）の GitHub アカウントに書き換え、PR でベースブランチ（通常 `main`）に入れる。
+   複数地域版を同じマシンで扱う場合は、あわせて worktree パス（`../mirai-gikai-local-worktree/`）も自地域向けに変えてよい。
+3. **Actions の有効化案内。** Actions が fork で無効のままの場合は API では確実に有効化できないため、
+   ユーザーに **Actions タブで有効化する**よう伝える。
+4. **4-6 Dependabot の有効化。** Dependabot alerts と security updates を有効にする
    （`gh api -X PUT repos/<owner>/<repo>/vulnerability-alerts` と `.../automated-security-fixes`）。
    権限が無く失敗した場合は、Settings → Code security で有効にするようユーザーに伝える。
-   既存の別用途の fork（4-0 で判定）の場合は、設定を変えてよいかユーザーに確認してから行う
+   既存の別用途の fork（手順 1 で判定）の場合は、設定を変えてよいかユーザーに確認してから行う。
 
 ---
 

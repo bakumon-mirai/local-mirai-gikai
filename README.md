@@ -19,7 +19,7 @@ Claude Code・Codex CLI・Gemini CLI などの AI コーディングエージェ
 ```
 ○○市のみらい議会を作りたいです。
 次の指示書を要約せずに全文読んで、その手順に従って進めてください。
-https://raw.githubusercontent.com/bakumon1107/mirai-gikai-fukuoka-city/base-local/develop/docs/20261116_1900_ai-setup-guide.md
+https://raw.githubusercontent.com/bakumon-mirai/local-mirai-gikai/main/docs/20261116_1900_ai-setup-guide.md
 ```
 
 依頼はこの1回だけです。エージェントは次の順に、確認を取りながら進めます。
@@ -29,7 +29,7 @@ https://raw.githubusercontent.com/bakumon1107/mirai-gikai-fukuoka-city/base-loca
    運営者として名乗る名前、立場の開示、守るべきルール（FORK_GUIDELINES・ソースコードの公開・中立性）を
    確認したうえで、あなた自身が「着手する」と決めます。やめる場合はここで終わり、何も作られません
 3. 着手が決まったら、必要なツールの確認 → GitHub へのログイン → fork → 手元へのコピー →
-   初期設定 → 自地域のブランチの準備 → （希望すれば）アプリの起動
+   fork 直後の GitHub 設定 → （希望すれば）アプリの起動
 
 パスワード入力など本人にしかできない操作だけ、案内に従って自分で行ってください。
 
@@ -79,7 +79,7 @@ WSL2 を使わずに Windows のまま進めることもできます。その場
 
 | 項目 | 変更場所 | 根拠 |
 |---|---|---|
-| **自地域のブランチへ切り替える** | `<地域>/develop` を作成し、GitHub のデフォルトブランチと `.github/`・`AGENTS.md`・`.claude/` の参照を変更 | fork手順 セクション4 |
+| **fork 直後の GitHub 設定をする** | `gh repo set-default`・Issues / Actions / Dependabot 有効化・`.github/CODEOWNERS` 更新 | fork手順 セクション4 |
 | サービス名を「みらい議会＠地域名」形式にする | `web/src/config/site.config.ts` の `siteName` | FORK_GUIDELINES 1 |
 | ロゴ・アイコンを独自のものに差し替える | `web/public/img/logo.svg`、`web/public/icons/pwa/` | FORK_GUIDELINES 2 |
 | OGP画像・ヒーロー画像を差し替える | `web/public/ogp.jpg`、`web/public/img/hero_background.png` | FORK_GUIDELINES 3 |
@@ -110,87 +110,76 @@ WSL2 を使わずに Windows のまま進めることもできます。その場
 > [!IMPORTANT]
 > **fork する前に、その自治体で何が作れるかの調査と、同じ自治体の版がすでに無いかの確認を済ませてください。**
 > 調査は fork しなくても、AI エージェントに調査手順書
-> （https://raw.githubusercontent.com/bakumon1107/mirai-gikai-fukuoka-city/base-local/develop/.claude/skills/council-survey/SKILL.md ）
+> （https://raw.githubusercontent.com/bakumon-mirai/local-mirai-gikai/main/.claude/skills/council-survey/SKILL.md ）
 > を読ませて「○○市を調査して」と頼めば実行できます。作れるかどうか分からないまま fork したり、
 > 同じ自治体の版を重複して作ったりするのを避けるためです。
 
 先に「[はじめての方へ](#はじめての方へ)」の必要なものをそろえ、`gh auth login` で GitHub にログインしておいてください。
 
 1. このリポジトリのページで **Fork** を押す。
-2. **`Copy the default branch only` のチェックを外す。**
-   配布元リポジトリの既定ブランチは `base-local/develop` ではないため、チェックを外さないと
-   **テンプレートのブランチが fork に含まれません**。
-   なおこの操作で配布元の全ブランチ（福岡市版の作業ブランチ等）もコピーされます。
-   不要なものは調査で着手が決まってから削除します（手順6）。
-3. リポジトリ名を `mirai-gikai-<地域>` に変更して fork を作成する。
-4. 自分の fork を clone し、テンプレートのブランチへ移る。
+2. リポジトリ名を `mirai-gikai-<地域>` に変更して fork を作成する（既定ブランチ `main` のまま作成して問題ありません）。
+3. 自分の fork を clone する。
 
    ```bash
    git clone https://github.com/<あなたのアカウント>/mirai-gikai-<地域>.git
    cd mirai-gikai-<地域>
-   git switch base-local/develop
    ```
 
-   `gh` CLI を使う場合は、1〜3 を次の1行で済ませられます
-   （`gh repo fork` は既定で全ブランチをコピーします。`--default-branch-only` は付けないこと）。
+   `gh` CLI を使う場合は、1〜2 を次の1行で済ませられます。
 
    ```bash
-   gh repo fork bakumon1107/mirai-gikai-fukuoka-city --fork-name mirai-gikai-<地域> --clone=false
+   gh repo fork bakumon-mirai/local-mirai-gikai --fork-name mirai-gikai-<地域> --clone=false
    ```
 
-5. **fork 直後の GitHub 設定をする。** fork は配布元の設定を引き継がず、
+4. **fork 直後の GitHub 設定をする。** fork は配布元の設定を引き継がず、
    一部の機能が無効の状態で作られます。
 
    ```bash
    # gh の既定リポジトリを自分の fork にする。
-   # これをしないと gh pr create / gh pr view / gh issue が本家 team-mirai を向く
+   # これをしないと gh pr create / gh pr view / gh issue が本家や配布元を向く
    gh repo set-default <あなたのアカウント>/mirai-gikai-<地域>
    gh repo set-default --view    # 自分の fork が表示されれば OK
 
    # fork では Issues が既定で無効になっている
    gh repo edit <あなたのアカウント>/mirai-gikai-<地域> --enable-issues
 
-   # テンプレート配布元を remote として登録する（あとから更新を取り込むため。fork手順 4-6）
-   git remote add template https://github.com/bakumon1107/mirai-gikai-fukuoka-city.git
-   git fetch template base-local/develop
+   # テンプレート配布元を remote として登録する（あとから更新を取り込むため。fork手順 4-5）
+   git remote add template https://github.com/bakumon-mirai/local-mirai-gikai.git
+   git fetch template main
    ```
 
    **GitHub Actions も fork では止まっています。** fork のページの **Actions** タブを開き、
    `I understand my workflows, go ahead and enable them` を押して有効にしてください
    （押さないと CI が一切動かず、PR のチェックが付きません）。
 
-6. **AI コーディングエージェントを起動し、「○○市のみらい議会を作りたい」と伝える。**
+5. **AI コーディングエージェントを起動し、「○○市のみらい議会を作りたい」と伝える。**
    Claude Code・Codex CLI・Gemini CLI など、`AGENTS.md`（`CLAUDE.md`・`GEMINI.md` は同じ内容への
    シンボリックリンク）を読むエージェントなら同じ流れで動きます。
    まず `council-survey` の手順（[.claude/skills/council-survey/SKILL.md](.claude/skills/council-survey/SKILL.md)）で
    その自治体の議会サイトが調査され、何が作れるかが判定されます。
    続けて、同じ自治体の既存の版の確認と、あなた自身の着手の承認（運営者名・立場の開示・守るべきルールの確認）があります。
    着手が決まると、続けて次の GitHub 準備を進めます
-   （[fork手順 セクション4](docs/20260304_1000_別地域向けfork手順.md#4-自地域のブランチへ切り替える)）。
+   （[fork手順 セクション4](docs/20260304_1000_別地域向けfork手順.md#4-github-設定とブランチの確認)）。
 
-   - `<地域>/develop` を `base-local/develop` から作り、GitHub の既定ブランチにする
-   - **配布元から引き継いだ不要なブランチを削除する**
-     （手順2で `fukuoka-city/*`・`kawasaki/develop` 等もコピーされているため。
-     残すのは `<地域>/develop` と `base-local/develop` の2本）
-   - ワークフロー・`AGENTS.md`・`.claude/`・`CODEOWNERS` の参照を自地域向けに置き換える
-
-   ブランチの削除は元に戻せないため、削除するブランチの一覧を確認してから実行します。
+   - `.github/CODEOWNERS` を自分（または運営チーム）のアカウントに書き換える
+   - Dependabot（脆弱性の自動通知）を有効にする
 
 > [!WARNING]
 > fork ネットワークの中にいるため、GitHub 上で Pull Request を作ると
-> **base が本家 `team-mirai/mirai-gikai` に初期設定されます。**
+> **base が配布元や本家 `team-mirai/mirai-gikai` に初期設定されることがあります。**
 > 自分の fork 内で PR を出すときは、base リポジトリが自分のものになっているか毎回確認してください。
 
 > [!NOTE]
 > **既に `mirai-gikai` 系のリポジトリを fork 済みの場合**、GitHub は1アカウントにつき
 > 同じネットワークの fork を1つしか作らせないため、この fork は作れません。
-> その場合は fork せず、既存の fork にこのリポジトリを remote として足してください
+> その場合は fork せず、既存の fork にこのリポジトリを remote として足し、
+> 既存の既定ブランチとは別のブランチ（`<地域>/develop`）を作って使ってください
 > （繋がりは既存の fork が持っているので維持されます）。
 >
 > ```bash
-> git remote add template https://github.com/bakumon1107/mirai-gikai-fukuoka-city.git
-> git fetch template base-local/develop
-> git switch -c base-local/develop template/base-local/develop
+> git remote add template https://github.com/bakumon-mirai/local-mirai-gikai.git
+> git fetch template main
+> git switch -c <地域>/develop template/main
 > ```
 
 ---

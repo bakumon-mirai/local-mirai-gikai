@@ -1,11 +1,12 @@
 name: Integration Tests
 
-# fork 時は自分のベースブランチ名に変更すること
+# 通常の fork では main のまま使用できます。
+# 既存の別用途 fork に別ブランチで足した場合のみ、そのブランチ名に変更してください。
 on:
   push:
-    branches: [base-local/develop]
+    branches: [main]
   pull_request:
-    branches: [base-local/develop]
+    branches: [main]
 
 jobs:
   integration-test:
