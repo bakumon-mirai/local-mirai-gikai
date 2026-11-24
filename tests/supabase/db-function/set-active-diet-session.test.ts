@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
   adminClient,
+  getAnonClient,
   createTestDietSession,
   cleanupTestDietSession,
 } from "../utils";
@@ -88,5 +89,14 @@ describe("set_active_council_session() 関数", () => {
       .single();
 
     expect(data?.is_active).toBe(false);
+  });
+
+  it("anon クライアントではパーミッションエラーになる", async () => {
+    const anon = getAnonClient();
+    const { error } = await anon.rpc("set_active_council_session", {
+      target_session_id: "00000000-0000-0000-0000-000000000000",
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("42501");
   });
 });

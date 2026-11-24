@@ -1,72 +1,85 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  cleanupTestUser,
+  createTestUser,
   getAnonClient,
   getAuthenticatedClient,
-  createTestUser,
-  cleanupTestUser,
 } from "../utils";
 
 /**
- * 全テーブルは RLS 有効 + ポリシーなし（default deny）。
+ * 全29テーブルは RLS 有効 + ポリシーなし（default deny）。
  * anon / authenticated どちらからも SELECT・INSERT できないことを確認する。
  */
-
 const tables = [
+  // 01. 共通土台・議会マスター
+  "council_sessions",
+  "committees",
+  "factions",
+  "ai_settings",
+  // 02. 議案
   "bills",
   "bill_contents",
-  "mirai_stances",
-  "chats",
   "tags",
   "bills_tags",
+  "faction_stances",
   "preview_tokens",
-  "diet_sessions",
+  // 03. 一般質問・代表質問
+  "general_questions",
+  // 04. 委員会議事録
+  "committee_meetings",
+  "committee_meeting_topics",
+  // 05. 首長の記者会見
+  "press_conferences",
+  "press_conference_items",
+  "press_conference_turns",
+  // 06. AIチャット
+  "chats",
+  "chat_usage_events",
+  // 07. AIインタビュー・トピック分析
   "interview_configs",
   "interview_questions",
   "interview_sessions",
   "interview_messages",
   "interview_report",
-  "general_questions",
-  "committee_meetings",
-  "committee_meeting_topics",
-  "press_conferences",
-  "press_conference_items",
-  "press_conference_turns",
+  "interview_rating_feedbacks",
+  "report_reactions",
+  "expert_registrations",
+  "topic_analysis_versions",
+  "topic_analysis_topics",
+  "topic_analysis_classifications",
 ] as const;
 
-describe("RLS default deny（全テーブル共通）", () => {
+describe("RLS default deny（全29テーブル共通）", () => {
   describe("anon クライアント", () => {
     const anon = getAnonClient();
 
     for (const table of tables) {
       it(`${table}: SELECT が空結果になる`, async () => {
         const { data, error } = await anon.from(table).select("*").limit(1);
-        // RLS で拒否される場合、エラーか空配列が返る
-        if (error) {
-          expect(error).toBeTruthy();
-        } else {
-          expect(data).toEqual([]);
-        }
+        expect(error).toBeNull();
+        expect(data).toEqual([]);
       });
     }
 
-    it("bills: INSERT が拒否される", async () => {
+    it("bills: INSERT が RLS で拒否される", async () => {
       const { error } = await anon.from("bills").insert({
         name: "不正な挿入テスト",
-        originating_house: "HR",
-        status: "introduced",
+        status: "submitted",
         publish_status: "draft",
       });
       expect(error).not.toBeNull();
+      expect(error?.code).toBe("42501");
     });
 
-    it("diet_sessions: INSERT が拒否される", async () => {
-      const { error } = await anon.from("diet_sessions").insert({
+    it("council_sessions: INSERT が RLS で拒否される", async () => {
+      const { error } = await anon.from("council_sessions").insert({
         name: "不正な挿入テスト",
         start_date: "2025-01-01",
         end_date: "2025-06-30",
         slug: "rls-test",
       });
       expect(error).not.toBeNull();
+      expect(error?.code).toBe("42501");
     });
   });
 
@@ -89,34 +102,32 @@ describe("RLS default deny（全テーブル共通）", () => {
       it(`${table}: SELECT が空結果になる`, async () => {
         const client = await getAuthenticatedClient(email, password);
         const { data, error } = await client.from(table).select("*").limit(1);
-        if (error) {
-          expect(error).toBeTruthy();
-        } else {
-          expect(data).toEqual([]);
-        }
+        expect(error).toBeNull();
+        expect(data).toEqual([]);
       });
     }
 
-    it("bills: INSERT が拒否される", async () => {
+    it("bills: INSERT が RLS で拒否される", async () => {
       const client = await getAuthenticatedClient(email, password);
       const { error } = await client.from("bills").insert({
         name: "不正な挿入テスト",
-        originating_house: "HR",
-        status: "introduced",
+        status: "submitted",
         publish_status: "draft",
       });
       expect(error).not.toBeNull();
+      expect(error?.code).toBe("42501");
     });
 
-    it("diet_sessions: INSERT が拒否される", async () => {
+    it("council_sessions: INSERT が RLS で拒否される", async () => {
       const client = await getAuthenticatedClient(email, password);
-      const { error } = await client.from("diet_sessions").insert({
+      const { error } = await client.from("council_sessions").insert({
         name: "不正な挿入テスト",
         start_date: "2025-01-01",
         end_date: "2025-06-30",
         slug: "rls-test",
       });
       expect(error).not.toBeNull();
+      expect(error?.code).toBe("42501");
     });
   });
 });
