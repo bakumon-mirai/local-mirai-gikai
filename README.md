@@ -128,7 +128,7 @@ WSL2 を使わずに Windows のまま進めることもできます。その場
    `gh` CLI を使う場合は、1〜2 を次の1行で済ませられます。
 
    ```bash
-   gh repo fork bakumon-mirai/local-mirai-gikai --fork-name mirai-gikai-<地域> --clone=false
+   gh repo fork bakumon-mirai/local-mirai-gikai --fork-name mirai-gikai-<地域> --default-branch-only --clone=false
    ```
 
 4. **fork 直後の GitHub 設定をする。** fork は配布元の設定を引き継がず、
