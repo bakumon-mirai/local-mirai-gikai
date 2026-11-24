@@ -7,8 +7,8 @@ import {
   cleanupTestTag,
   createTestBillTag,
   createTestPreviewToken,
-  createTestDietSession,
-  cleanupTestDietSession,
+  createTestCouncilSession,
+  cleanupTestCouncilSession,
 } from "@test-utils/utils";
 import {
   findPublishedBillsWithContents,
@@ -43,7 +43,7 @@ describe("bill-repository 統合テスト", () => {
     }
     tagIds.length = 0;
     for (const sessionId of councilSessionIds) {
-      await cleanupTestDietSession(sessionId);
+      await cleanupTestCouncilSession(sessionId);
     }
     councilSessionIds.length = 0;
   });
@@ -281,7 +281,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("findPublishedBillsByDietSession", () => {
     it("定例会IDに紐づく公開済み議案を取得できる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill = await createTestBill({
@@ -303,10 +303,10 @@ describe("bill-repository 統合テスト", () => {
     });
 
     it("別の会期の議案は含まれない", async () => {
-      const session1 = await createTestDietSession({
+      const session1 = await createTestCouncilSession({
         slug: `session1-${Date.now()}`,
       });
-      const session2 = await createTestDietSession({
+      const session2 = await createTestCouncilSession({
         slug: `session2-${Date.now()}`,
       });
       councilSessionIds.push(session1.id, session2.id);
@@ -334,7 +334,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("findPreviousSessionBills", () => {
     it("前回の定例会の公開済み議案を件数制限ありで取得できる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill1 = await createTestBill({
@@ -357,7 +357,7 @@ describe("bill-repository 統合テスト", () => {
     });
 
     it("公開済み議案がない場合は空配列を返す", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const result = await findPreviousSessionBills(session.id, "normal", 10);
@@ -372,7 +372,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("countPublishedBillsByDietSession", () => {
     it("公開済み議案数を正しくカウントできる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill1 = await createTestBill({
@@ -403,7 +403,7 @@ describe("bill-repository 統合テスト", () => {
     });
 
     it("該当する議案がない場合は0を返す", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const count = await countPublishedBillsByDietSession(
@@ -453,7 +453,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("findPublishedBillsByTag", () => {
     it("特定タグに紐づく公開済み議案を取得できる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill = await createTestBill({
@@ -506,7 +506,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("findFeaturedBillsWithContents", () => {
     it("注目の議案を取得できる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill = await createTestBill({
@@ -567,7 +567,7 @@ describe("bill-repository 統合テスト", () => {
 
   describe("findComingSoonBills", () => {
     it("coming_soon議案を取得できる", async () => {
-      const session = await createTestDietSession();
+      const session = await createTestCouncilSession();
       councilSessionIds.push(session.id);
 
       const bill = await createTestBill({
