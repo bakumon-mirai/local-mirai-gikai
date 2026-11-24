@@ -5,6 +5,7 @@ import { siteConfig } from "@/config/site.config";
 import type { CouncilSession, PastCouncilSession } from "../../shared/types";
 import { mergePastCouncilSessions } from "../../shared/utils/merge-past-sessions";
 import { parseSessionMilestones } from "../../shared/utils/parse-session-milestones";
+import { selectCurrentCouncilSession } from "../../shared/utils/select-current-session";
 
 type CouncilSessionRow = Omit<CouncilSession, "schedule_milestones"> & {
   schedule_milestones: unknown;
@@ -56,21 +57,53 @@ export async function findCurrentCouncilSession(
 ): Promise<CouncilSession | null> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("council_sessions")
-    .select("*")
-    .lte("start_date", targetDate)
-    .or(`end_date.gte.${targetDate},end_date.is.null`)
-    .order("start_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // 最新の開始済み会期（end_date=null が後続会期で打ち切られたかを判定するため）と、
+  // end_date >= targetDate を満たす開催中候補を別クエリで取得し、途中に多数の終了済み臨時会があっても取りこぼさない。
+  const [latestStartedRes, activeWithEndDateRes] = await Promise.all([
+    supabase
+      .from("council_sessions")
+      .select("*")
+      .lte("start_date", targetDate)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("council_sessions")
+      .select("*")
+      .lte("start_date", targetDate)
+      .gte("end_date", targetDate)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    console.error("Failed to fetch current council session:", error);
+  if (latestStartedRes.error) {
+    console.error(
+      "Failed to fetch latest started council session:",
+      latestStartedRes.error
+    );
+    return null;
+  }
+  if (activeWithEndDateRes.error) {
+    console.error(
+      "Failed to fetch active council session with end_date:",
+      activeWithEndDateRes.error
+    );
     return null;
   }
 
-  return toCouncilSession(data);
+  const candidates: CouncilSession[] = [];
+  const latestStarted = toCouncilSession(latestStartedRes.data);
+  if (latestStarted) candidates.push(latestStarted);
+
+  const activeWithEndDate = toCouncilSession(activeWithEndDateRes.data);
+  if (activeWithEndDate && activeWithEndDate.id !== latestStarted?.id) {
+    candidates.push(activeWithEndDate);
+  }
+
+  candidates.sort((a, b) => b.start_date.localeCompare(a.start_date));
+
+  return selectCurrentCouncilSession(candidates, targetDate);
 }
 
 /**

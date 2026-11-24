@@ -1,14 +1,17 @@
 "use client";
 
+import { Search } from "lucide-react";
+import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DesktopNav } from "@/components/layouts/navigation/desktop-nav";
+import { siteConfig } from "@/config/site.config";
 import { DifficultySelector } from "@/features/bill-difficulty/client/components/difficulty-selector";
 import type { DifficultyLevelEnum } from "@/features/bill-difficulty/shared/types";
 import type { CouncilSession } from "@/features/council-sessions/shared/types";
 import { InterviewHeaderActions } from "@/features/interview-session/client/components/interview-header-actions";
 import { isInterviewPage, isMainPage } from "@/lib/page-layout-utils";
-import { siteConfig } from "@/config/site.config";
 import { routes } from "@/lib/routes";
 import { HamburgerMenu } from "./hamburger-menu";
 
@@ -19,7 +22,9 @@ interface HeaderClientProps {
 
 export function HeaderClient({ difficultyLevel, sessions }: HeaderClientProps) {
   const pathname = usePathname();
-  const showDifficultySelector = isMainPage(pathname);
+  const isArchiveLayout = siteConfig.homeLayout === "archive";
+  const showDifficultySelector =
+    isMainPage(pathname) && siteConfig.features.bills;
   const showInterviewActions = isInterviewPage(pathname);
 
   return (
@@ -41,9 +46,19 @@ export function HeaderClient({ difficultyLevel, sessions }: HeaderClientProps) {
                   height={36}
                 />
               )}
-              <div className="text-xl font-bold">{siteConfig.siteName}</div>
+              <div
+                className={
+                  isArchiveLayout
+                    ? "text-sm sm:text-base font-bold whitespace-nowrap"
+                    : "text-xl font-bold"
+                }
+              >
+                {siteConfig.siteName}
+              </div>
             </Link>
           </div>
+
+          {isArchiveLayout && <DesktopNav />}
 
           {/* Navigation */}
           <nav
@@ -54,6 +69,15 @@ export function HeaderClient({ difficultyLevel, sessions }: HeaderClientProps) {
               <DifficultySelector currentLevel={difficultyLevel} />
             )}
             {showInterviewActions && <InterviewHeaderActions />}
+            {siteConfig.features.search && (
+              <Link
+                href={routes.search() as Route}
+                aria-label="検索"
+                className="p-2 text-mirai-text-muted hover:text-mirai-text transition-colors"
+              >
+                <Search className="size-5" />
+              </Link>
+            )}
             <HamburgerMenu sessions={sessions} />
           </nav>
         </div>
