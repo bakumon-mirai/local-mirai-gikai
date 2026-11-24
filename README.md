@@ -79,7 +79,7 @@ WSL2 を使わずに Windows のまま進めることもできます。その場
 
 | 項目 | 変更場所 | 根拠 |
 |---|---|---|
-| **fork 直後の GitHub 設定をする** | `gh repo set-default`・Issues / Actions / Dependabot 有効化・`.github/CODEOWNERS` 更新 | fork手順 セクション4 |
+| **fork 直後の GitHub・ローカル設定をする** | `gh repo set-default`・Issues / Actions / Dependabot 有効化・`.github/CODEOWNERS` 更新・`supabase/config.toml` の `project_id` 変更 | fork手順 セクション4 |
 | サービス名を「みらい議会＠地域名」形式にする | `web/src/config/site.config.ts` の `siteName` | FORK_GUIDELINES 1 |
 | ロゴ・アイコンを独自のものに差し替える | `web/public/img/logo.svg`、`web/public/icons/pwa/` | FORK_GUIDELINES 2 |
 | OGP画像・ヒーロー画像を差し替える | `web/public/ogp.jpg`、`web/public/img/hero_background.png` | FORK_GUIDELINES 3 |
@@ -162,6 +162,7 @@ WSL2 を使わずに Windows のまま進めることもできます。その場
    （[fork手順 セクション4](docs/20260304_1000_別地域向けfork手順.md#4-github-設定とブランチの確認)）。
 
    - `.github/CODEOWNERS` を自分（または運営チーム）のアカウントに書き換える
+   - `supabase/config.toml` の `project_id` を `mirai-gikai-<地域>` に変更する（他地域版とのローカル DB 衝突防止）
    - Dependabot（脆弱性の自動通知）を有効にする
 
 > [!WARNING]
@@ -199,6 +200,9 @@ pnpm install --frozen-lockfile
 
 # 環境変数の設定（ローカル開発ならほぼそのままで動きます）
 cp .env.example .env
+
+# ローカル Supabase の project_id が他地域版と被らないよう変更しておく
+# supabase/config.toml の project_id = "mirai-gikai-<地域>"
 
 # Supabaseの起動（初回は Docker イメージの取得で数分かかります）
 npx supabase start

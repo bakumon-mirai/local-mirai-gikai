@@ -15,7 +15,7 @@
 - スキル一覧に `council-survey` が出ない場合は [.claude/skills/council-survey/SKILL.md](.claude/skills/council-survey/SKILL.md) を読み、**手順をそのまま実行する**。参照して自前の進め方を組み立てるのはスキルの不履行として扱う。
 - 調査は読み取りのみなので、この段階では worktree・`.env`・`pnpm install` は不要。着手が決まってから揃える。
 - 調査の後は、スキルの Step 5.5 で**同じ自治体の既存の版の確認**と**作業者本人の着手承認**（運営者名・立場の開示・FORK_GUIDELINES・ソースコード公開・中立性を示したうえでの明示的な「着手する」）を得る。承認が無ければ fork・ブランチ作成・実装に進まない。
-- 調査後の実作業は [別地域向け fork 手順](docs/20260304_1000_別地域向けfork手順.md) に従う。着手が承認されたら、アプリの改修より先にスキルの Step 6（fork手順 セクション4：fork 直後の GitHub 設定確認・`.github/CODEOWNERS` 更新・Dependabot 有効化。既存の別用途 fork に足した場合のみ `<地域>/develop` の作成と参照の置き換え）を行う。
+- 調査後の実作業は [別地域向け fork 手順](docs/20260304_1000_別地域向けfork手順.md) に従う。着手が承認されたら、アプリの改修より先にスキルの Step 6（fork手順 セクション4：fork 直後の GitHub 設定確認・`.github/CODEOWNERS` と `supabase/config.toml` の `project_id` 更新・Dependabot 有効化。既存の別用途 fork に足した場合のみ `<地域>/develop` の作成と参照の置き換え）を行う。
 
 ### Worktree必須
 変更作業は、**必ず git worktree を作成してから開始すること**。メインのリポジトリディレクトリでは直接変更を行わない。
@@ -191,7 +191,7 @@ Repository レイヤーの詳細は [docs/repository-layer.md](docs/repository-l
      ```
 
 ## Supabase & Environment Notes
-- ローカル開発前に `npx supabase start` を実行し、`.env.example` を `.env` にコピーして値を整えます。
+- ローカル開発前に `supabase/config.toml` の `project_id` が他地域版と重複しない名称（`mirai-gikai-<地域>`）になっていることを確認したうえで `npx supabase start` を実行し、`.env.example` を `.env` にコピーして値を整えます。
 - スキーマ変更時は `supabase/migrations` のマイグレーションと `packages/supabase/types/supabase.types.ts` の再生成ファイルをセットでコミットします。
 - `pnpm seed` は `admin@example.com / admin123456` を含む検証データを投入するため、開発用途に限定してください。
 - **RLSとアクセスパターン**: マイグレーションでは必ず `alter table <テーブル名> enable row level security;` を記述してRLSを有効化すること。ただし **ポリシーは定義しない**（デフォルト全拒否）。データアクセスはすべて `createAdminClient()`（Service Role Key）経由で行い、認可ロジックはアプリケーション層（Server Actions / Loaders）で実装する。

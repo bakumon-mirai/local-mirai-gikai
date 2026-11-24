@@ -349,7 +349,9 @@ Step 5.5 で着手の承認が得られたら、アプリの改修より先に
 
    - **`bakumon-mirai/local-mirai-gikai` の場合（通常）**: 既定ブランチ `main` のままそのまま開発できるため、ブランチの作成・既定ブランチ変更・不要ブランチ削除・ワークフロー内のブランチ名置換は**不要**。手順 2 へ進む。
    - **それ以外の場合（既存の別用途 fork にテンプレートのブランチを足した場合）**: 既存の fork に別の用途のブランチや稼働中のサービスがある前提で扱い、既定ブランチの変更やブランチ削除は行わない。`<地域>/develop` を `template/main` から作成済みであることを確認し、`.github/workflows/`・`AGENTS.md`・`.claude/` の `main` 参照を `<地域>/develop` に置き換える（手順 2 の CODEOWNERS 更新と同じ PR で `<地域>/develop` に入れる）。
-2. **4-2 `.github/CODEOWNERS` の書き換え。** `.github/CODEOWNERS` のコードオーナーを自分（または運営チーム）の GitHub アカウントに書き換え、PR でベースブランチ（通常 `main`）に入れる。
+2. **4-2 `.github/CODEOWNERS` と `supabase/config.toml` の更新。** 次の2点を自地域向けに書き換え、PR でベースブランチ（通常 `main`）に入れる。
+   - `.github/CODEOWNERS` のコードオーナーを自分（または運営チーム）の GitHub アカウントに変更する
+   - `supabase/config.toml` の `project_id` を `"mirai-gikai-<地域>"` に変更する（同じ PC で他の地域版や本家とローカル Supabase の Docker コンテナ・DB ボリューム名が重複するのを防ぐため。**`npx supabase start` を実行する前に必ず変える**）
    複数地域版を同じマシンで扱う場合は、あわせて worktree パス（`../mirai-gikai-local-worktree/`）も自地域向けに変えてよい。
 3. **Actions の有効化案内。** Actions が fork で無効のままの場合は API では確実に有効化できないため、
    ユーザーに **Actions タブで有効化する**よう伝える。
